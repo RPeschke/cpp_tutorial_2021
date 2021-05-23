@@ -6,3 +6,4 @@ add_subdirectory(e_01_hello_world)
 
 
 add_subdirectory(e_02_hello_root)
+add_subdirectory(e_03_single_pendulum)
