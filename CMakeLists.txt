@@ -5,3 +5,4 @@ project(cpp_tutorial_2021)
 add_subdirectory(e_01_hello_world)
 
 
+add_subdirectory(e_02_hello_root)
