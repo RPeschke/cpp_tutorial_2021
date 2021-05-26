@@ -1,4 +1,4 @@
-#include <iostream>
+#pragma once
 
 #include "TMath.h"
 #include "TGraph.h"
@@ -10,9 +10,11 @@
 #include "TApplication.h"
 #include "TSystem.h"
 
+namespace phys_sim{
+
+
 class vec2d{
   public:
-  vec2d(double x_ =0, double y_ =0):x(x_),y(y_){}
   double x =0,y =0;
 };
 class mass_object{
@@ -109,7 +111,13 @@ public:
 };
 
 class stage{
+  
+  
   public:
+  vec2d min_point = vec2d(-10,-10),max_point=vec2d(10,10);
+  double m_delta_t = 0.01;
+  int draw_counter = 0;
+  int draw_counter_max = 10;
   std::shared_ptr<TGraph> m_graph;
   TCanvas* c1;
   void init(){
@@ -117,11 +125,14 @@ class stage{
     m_graph = std::make_shared<TGraph>();
   }
   void process(){
-      simulate(0.01);
+      simulate(m_delta_t);
+      if (++draw_counter < draw_counter_max){
+        return;
+      }
       Draw();  
       m_graph->Draw("A*");
-      m_graph->GetXaxis()->SetLimits(-10,10);  
-      m_graph->GetYaxis()->SetRangeUser(-10,10);  
+      m_graph->GetXaxis()->SetLimits(min_point.x,max_point.x);  
+      m_graph->GetYaxis()->SetRangeUser(min_point.y,max_point.y);  
       c1->Modified();
       c1->Update();
 
@@ -130,7 +141,7 @@ class stage{
     init();
     for (int i =0 ;i < 100000; i++) {
       process();
-      gSystem->Sleep(10);
+      gSystem->Sleep(m_delta_t*1000);
     }
     return c1;
   }
@@ -158,55 +169,9 @@ class stage{
 };
 
 
-void Animate(void * ptr){
+inline void Animate(void * ptr){
   stage* s = (stage*)ptr;
   s->process();
 }
-
-
-//______________________________________________________________________________
-int main(int argc, char **argv)
-{
-
-
-	TApplication app("myApp",&argc,argv);
-    
-  auto anker = std::make_shared<mass_object>();
-  anker->is_fixed = true;
-
-  auto p_mass = std::make_shared<mass_object>(
-    vec2d(1,0)
-  );
-
-  auto p_mass2 = std::make_shared<mass_object>(
-    vec2d(2,0)
-  );
-  
-  
-  auto g      = std::make_shared<gravity>(p_mass, vec2d{0,-9.81});
-  auto g2      = std::make_shared<gravity>(p_mass2, vec2d{0,-9.81});
-  auto spring_ = std::make_shared<spring>(p_mass,anker, 10,1);
-  auto spring2_ = std::make_shared<spring>(p_mass,p_mass2, 10,1);
-  stage s;
-  s.m_masses.push_back(anker);
-  s.m_masses.push_back(p_mass);
-  s.m_masses.push_back(p_mass2);
-  s.m_forces.push_back(g);
-  s.m_forces.push_back(g2);
-  s.m_forces.push_back(spring_);
-  s.m_forces.push_back(spring2_);
-
-  std::cout<< "Animate " << (long long)Animate << " stage " << (long long)&s <<std::endl;
-  std::string code = "void update(){  ((void(*)(void*))" +std::to_string((long long)Animate) +")( (void*)" +std::to_string((long long)&s)+ ");  }";
-  std::cout << code <<std::endl;
-    
-  gInterpreter->Declare(code.c_str());
-  s.init();
-  
-  TTimer *timer = new TTimer(20);
-  timer->SetCommand("update()");
-  timer->TurnOn();
-  app.Run();
-  return 0;
 
 }
