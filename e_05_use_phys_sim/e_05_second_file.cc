@@ -55,8 +55,8 @@ for (; i < i_max ; i += 1){
 
 
 
-  std::cout<< "Animate " << (int64)Animate << " stage " << (int64)&s <<std::endl;
-  std::string code = "void update(){  ((void(*)(void*))" +std::to_string((int)Animate) +")( (void*)" +std::to_string((int)s)+ ");  }";
+  std::cout<< "Animate " << (int64_t)Animate << " stage " << (int64_t)&s <<std::endl;
+  std::string code = "void update(){  ((void(*)(void*))" +std::to_string((int64_t)Animate) +")( (void*)" +std::to_string((int64_t)s)+ ");  }";
   std::cout << code <<std::endl;
     
   gInterpreter->Declare(code.c_str());

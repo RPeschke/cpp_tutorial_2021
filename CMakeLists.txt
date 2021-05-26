@@ -1,7 +1,12 @@
 cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 project(cpp_tutorial_2021)
-include(${CMAKE_TOOLCHAIN_FILE})
 
+if(DEFINED ENV{vcpkg_cmake_toolchain})
+    message( "vcpkg_cmake_toolchain = $ENV{vcpkg_cmake_toolchain}")
+    include($ENV{vcpkg_cmake_toolchain})
+else()
+    message( "Evirement Variable  'vcpkg_cmake_toolchain' Not found. Please provide the envirment variable poini ")
+endif()
 add_subdirectory(e_01_hello_world)
 
 
@@ -11,3 +16,4 @@ add_subdirectory(e_03_single_pendulum)
 add_subdirectory(e_04_phys_sim_header_library)
 add_subdirectory(e_05_use_phys_sim)
 add_subdirectory(e_06_catch2)
+
