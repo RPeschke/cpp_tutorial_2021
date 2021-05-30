@@ -7,12 +7,9 @@
 
 
 START__DEFINE_RQ_SIGNAL_BASE_CLASS(TQObject)
-
-
   __DEFINE_RQ_SIGNAL__(Destroyed, "Destroyed()")
   __DEFINE_RQ_SIGNAL__(ChangedBy, "ChangedBy(char*)")
   __DEFINE_RQ_SIGNAL__(Message ,  "Message(char*)")
-
 END__DEFINE_RQ_SIGNAL_CLASS(TQObject)
 
 
@@ -23,13 +20,12 @@ START__DEFINE_RQ_SIGNAL_DERIVED_CLASS(TApplication, TQObject)
     __DEFINE_RQ_SIGNAL__(Terminate, "Terminate(Int_t)")
     __DEFINE_RQ_SIGNAL__(KeyPressed, "KeyPressed(Int_t)")
     __DEFINE_RQ_SIGNAL__(ReturnPressed, "ReturnPressed(char*)")
-
 END__DEFINE_RQ_SIGNAL_CLASS(TApplication)
 
 
 START__DEFINE_RQ_SIGNAL_DERIVED_CLASS(TPad, TQObject)
-  __DEFINE_RQ_SIGNAL__(RangeChanged,"RangeChanged()")
-  __DEFINE_RQ_SIGNAL__(RangeAxisChanged , "RangeAxisChanged()")
+    __DEFINE_RQ_SIGNAL__(RangeChanged,"RangeChanged()")
+    __DEFINE_RQ_SIGNAL__(RangeAxisChanged , "RangeAxisChanged()")
     __DEFINE_RQ_SIGNAL__(EventPave,"EventPave()")
     __DEFINE_RQ_SIGNAL__(StartEditing, "StartEditing()")
     __DEFINE_RQ_SIGNAL__(Closed, "Closed()")
@@ -39,30 +35,21 @@ START__DEFINE_RQ_SIGNAL_DERIVED_CLASS(TPad, TQObject)
 END__DEFINE_RQ_SIGNAL_CLASS(TPad)
 
 
-template <typename T>
-class TCanvas_signals : public TPad_signals<T> {
-public:
-  __DEFINE_RQ_SIGNAL__CONSTRUCTOR(TCanvas_signals, TPad_signals) {}
+
+START__DEFINE_RQ_SIGNAL_DERIVED_CLASS(TCanvas, TPad)
   __DEFINE_RQ_SIGNAL__(Picked,"Picked(TPad*,TObject*,Int_t)")
   __DEFINE_RQ_SIGNAL__( ProcessedEvent, "ProcessedEvent(Int_t,Int_t,Int_t,TObject*)") 
   __DEFINE_RQ_SIGNAL__( Selected, "Selected(TVirtualPad*,TObject*,Int_t)")
   __DEFINE_RQ_SIGNAL__(Cleared, "Cleared(TVirtualPad*)")
   __DEFINE_RQ_SIGNAL__(Closed, "Closed()")
-
-};
-
-__DEFINE_RQ_SIGNAL__FACTORY(TCanvas,TCanvas_signals)
+END__DEFINE_RQ_SIGNAL_CLASS(TCanvas)
 
 
-template <typename T>
-class TEveDigitSet_signals :TQObject_signals<T> {
-public:
-  __DEFINE_RQ_SIGNAL__CONSTRUCTOR(TEveDigitSet_signals, TQObject_signals) {}
 
+START__DEFINE_RQ_SIGNAL_DERIVED_CLASS(TEveDigitSet, TQObject)
   __DEFINE_RQ_SIGNAL__(SecSelected, "SecSelected(TEveDigitSet*, Int_t)")
+END__DEFINE_RQ_SIGNAL_CLASS(TEveDigitSet)
 
-};
-__DEFINE_RQ_SIGNAL__FACTORY(TEveDigitSet, TEveDigitSet_signals)
 
 
 template <typename T>
@@ -778,16 +765,12 @@ public:
 __DEFINE_RQ_SIGNAL__FACTORY(TSysEvtHandler, TSysEvtHandler_signals)
 
 
-class TTimer;
-template <typename T>
-class TTimer_signals :public TSysEvtHandler_signals<T> {
-public:
-  __DEFINE_RQ_SIGNAL__CONSTRUCTOR(TTimer_signals, TSysEvtHandler_signals) {}
-  __DEFINE_RQ_SIGNAL__(TurnOn, "TurnOn()")
+START__DEFINE_RQ_SIGNAL_DERIVED_CLASS(TTimer, TSysEvtHandler)
+    __DEFINE_RQ_SIGNAL__(TurnOn, "TurnOn()")
     __DEFINE_RQ_SIGNAL__(TurnOff, "TurnOff()")
     __DEFINE_RQ_SIGNAL__(Timeout ,"Timeout()")
-};
-__DEFINE_RQ_SIGNAL__FACTORY(TTimer, TTimer_signals)
+END__DEFINE_RQ_SIGNAL_CLASS(TTimer)
+
 
 
 

@@ -2,6 +2,7 @@
 #define RQSignals_h__
 #include <string>
 #include <memory>
+#include <vector>
 
 
 
@@ -144,6 +145,7 @@ void operator >> (const RQ_SIGNAL_TEMPLATE<T1>& signal_, const RQ_SLOT_TEMPLATE<
 class RQ_Slot_lamda;
 class RQ_Slot_lamda {
 public:
+	bool Conection_is_alive = true;
 	std::function<void()> m_f;
 	template <typename T>
 	RQ_Slot_lamda(T&& t) :m_f(std::forward<T>(t)) {
@@ -159,8 +161,6 @@ public:
 };
 
 inline void RQ_Slot_lamda_slot_void(void* ptr) {
-
-	std::cout << "RQ_Slot_lamda_slot_void\n";
 	RQ_Slot_lamda* slot = (RQ_Slot_lamda*)ptr;
 	slot->slot_void();
 }
@@ -169,16 +169,20 @@ inline void RQ_Slot_lamda_slot_void(void* ptr) {
 class ROOT_Declare_once {
 public:
 	ROOT_Declare_once(std::string declaration) {
-		std::cout << declaration << std::endl;
+
 		gInterpreter->Declare(declaration.c_str());
 	}
+	std::vector<RQ_Slot_lamda*> m_ptrs;
 };
+
+
 template <typename T1>
-void operator >> (const RQ_SIGNAL_TEMPLATE<T1>& signal_, RQ_Slot_lamda& slot_) {
+void operator >> (const RQ_SIGNAL_TEMPLATE<T1>& signal_, RQ_Slot_lamda&& slot_) {
 	static ROOT_Declare_once classdec(
-		"class TQ_common_slots  { public: using f_t = void(*)(void*);  f_t m_f2; void* m_ptr; void slot_void() { m_f2(m_ptr); std::cout << \"void\" << std::endl;  }    ClassDef(TQ_common_slots, 0)}; "
+		"class TQ_common_slots; class TQ_common_slots  { public: static std::vector<TQ_common_slots*> m_slots; using f_t = void(*)(void*);  f_t m_f2; void* m_ptr; void slot_void() { m_f2(m_ptr); }    ClassDef(TQ_common_slots, 0)}; "
 	);
 	RQ_Slot_lamda* slot_ptr = slot_.move_to_heap();
+	classdec.m_ptrs.push_back(slot_ptr);
 	std::string code3 =
 		signal_.m_className + "* obj = (" + signal_.m_className + "*)" + std::to_string((long long)signal_.m_object) + ";" +
 		"TQ_common_slots* sl = new TQ_common_slots();" +
@@ -186,9 +190,9 @@ void operator >> (const RQ_SIGNAL_TEMPLATE<T1>& signal_, RQ_Slot_lamda& slot_) {
 		"sl->m_ptr = (void*)" + std::to_string((long long)slot_ptr) + ";" +
 		"obj->Connect(\"" + signal_.m_name + "\", \"TQ_common_slots\", sl, \"slot_void()\");";
 
-	std::cout << code3 << std::endl;
+
 	gInterpreter->ProcessLine(code3.c_str());
-	//signal_.m_object->Connect(signal_.m_name.c_str(), slot_.m_className.c_str(), slot_.m_object, slot_.m_name.c_str());
+
 }
 
 
