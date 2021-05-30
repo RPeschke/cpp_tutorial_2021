@@ -7,6 +7,9 @@ if(DEFINED ENV{vcpkg_cmake_toolchain})
 else()
     message( "Evirement Variable  'vcpkg_cmake_toolchain' Not found. Please provide the envirment variable poini ")
 endif()
+
+include_directories("extern/TGSignals")
+
 add_subdirectory(e_01_hello_world)
 
 

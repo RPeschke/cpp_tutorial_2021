@@ -15,6 +15,7 @@ namespace phys_sim{
 
 class vec2d{
   public:
+      vec2d(double x_=0, double y_=0) :x(x_), y(y_) {}
   double x =0,y =0;
 };
 class mass_object{

@@ -9,6 +9,13 @@
 #include "TAxis.h"
 #include "TApplication.h"
 #include "TSystem.h"
+#include "platform.hh"
+#include "TQ_common_slots.hh"
+#include "TGSignals.hh"
+
+const double frameTime = 0.1;
+const int frameFactor = 100000;
+const double delta_t = frameTime / frameFactor;
 
 class vec2d{
   public:
@@ -18,6 +25,8 @@ class vec2d{
 class mass_object{
 
   vec2d m_force;
+  vec2d m_force_old;
+  vec2d velocity_old;
 public:
   mass_object( vec2d Initial_position =vec2d(), vec2d initial_velocity = vec2d(),double mass_ = 1, bool is_fixed_ = false)
     : mass(mass_), 
@@ -43,13 +52,15 @@ public:
     if (is_fixed){
       return;
     }
-    velocity.x += m_force.x*i;
-    velocity.y += m_force.y*i;
 
-    position.x += velocity.x*i;
-    position.y += velocity.y*i;
+    velocity.x += 0.5 * (m_force.x + m_force_old.x) *i /mass;
+    velocity.y += 0.5 * (m_force.y + m_force_old.y) *i /mass;
 
+    position.x += 0.5*(velocity.x + velocity_old.x)*i;
+    position.y += 0.5*(velocity.y + velocity_old.y)*i;
 
+    velocity_old = velocity;
+    m_force_old = m_force;
     m_force = vec2d{};
   }
   void add_force(vec2d Force_){
@@ -117,7 +128,9 @@ class stage{
     m_graph = std::make_shared<TGraph>();
   }
   void process(){
-      simulate(0.01);
+      for (int i =0;i< frameFactor ;++i) {
+        simulate(delta_t);
+      }
       Draw();  
       m_graph->Draw("A*");
       m_graph->GetXaxis()->SetLimits(-10,10);  
@@ -163,6 +176,55 @@ void Animate(void * ptr){
   s->process();
 }
 
+//class RQ_Slot_lamda;
+//class RQ_Slot_lamda {
+//public:
+//    std::function<void()> m_f;
+//    template <typename T>
+//    RQ_Slot_lamda(T&& t) :m_f(std::forward<T>(t)){
+//
+//    }
+//    RQ_Slot_lamda* move_to_heap() {
+//        return new RQ_Slot_lamda(std::move(m_f));
+//    }
+//    void slot_void() {
+//        m_f();
+//    }
+//
+//};
+//
+//void RQ_Slot_lamda_slot_void(void* ptr) {
+//    
+//    std::cout << "RQ_Slot_lamda_slot_void\n";
+//    RQ_Slot_lamda* slot = (RQ_Slot_lamda*)ptr;
+//    slot->slot_void();
+//}
+//
+//
+//class ROOT_Declare_once {
+//public:
+//    ROOT_Declare_once(std::string declaration) {
+//		std::cout << declaration << std::endl;
+//		gInterpreter->Declare(declaration.c_str());
+//    }
+//};
+//template <typename T1>
+//void operator >> (const RQ_SIGNAL_TEMPLATE<T1>& signal_,  RQ_Slot_lamda& slot_) {
+//    static ROOT_Declare_once classdec(
+//        "class TQ_common_slots  { public: using f_t = void(*)(void*);  f_t m_f2; void* m_ptr; void slot_void() { m_f2(m_ptr); std::cout << \"void\" << std::endl;  }    ClassDef(TQ_common_slots, 0)}; "
+//    );
+//    RQ_Slot_lamda* slot_ptr = slot_.move_to_heap();
+//    std::string code3 = 
+//        signal_.m_className +"* obj = ("+signal_.m_className+"*)" + std::to_string((long long)signal_.m_object) + ";" +
+//        "TQ_common_slots* sl = new TQ_common_slots();"+
+//        "sl->m_f2 = (void(*)(void*))"+ std::to_string ( (long long)RQ_Slot_lamda_slot_void) +";"+
+//        "sl->m_ptr = (void*)" + std::to_string((long long)slot_ptr) + ";" +
+//        "obj->Connect(\"" + signal_.m_name+"\", \"TQ_common_slots\", sl, \"slot_void()\");";
+//
+//    std::cout << code3 << std::endl;
+//    gInterpreter->ProcessLine(code3.c_str());
+//    //signal_.m_object->Connect(signal_.m_name.c_str(), slot_.m_className.c_str(), slot_.m_object, slot_.m_name.c_str());
+//}
 
 //______________________________________________________________________________
 int main(int argc, char **argv)
@@ -183,10 +245,10 @@ int main(int argc, char **argv)
   );
   
   
-  auto g      = std::make_shared<gravity>(p_mass, vec2d{0,-9.81});
-  auto g2      = std::make_shared<gravity>(p_mass2, vec2d{0,-9.81});
-  auto spring_ = std::make_shared<spring>(p_mass,anker, 10,1);
-  auto spring2_ = std::make_shared<spring>(p_mass,p_mass2, 10,1);
+  auto g      = Snew gravity(p_mass, vec2d{0,-9.81});
+  auto g2      = Snew gravity(p_mass2, vec2d{0,-9.81});
+  auto spring_ = Snew spring(p_mass,anker, 100,1);
+  auto spring2_ = Snew spring(p_mass,p_mass2, 100,1);
   stage s;
   s.m_masses.push_back(anker);
   s.m_masses.push_back(p_mass);
@@ -201,10 +263,31 @@ int main(int argc, char **argv)
   std::cout << code <<std::endl;
     
   gInterpreter->Declare(code.c_str());
+
+  //std::string code1 = "class TQ_common_slots  { public: using f_t = void(*)(void*);  f_t m_f2; void* m_ptr; void slot_void() { m_f2(m_ptr); std::cout << \"void\" << std::endl;  }    ClassDef(TQ_common_slots, 0)}; ";
+  //std::cout << code1 << std::endl;
+  //gInterpreter->Declare(code1.c_str());
   s.init();
+  std::string code2 = "std::cout << \"hello world\" <<std::endl ;";
+      std::cout << code2 << std::endl;
+  gInterpreter->ProcessLine(code2.c_str());
+
+
+  TTimer* timer = new TTimer(frameTime);
+
+  std::string code3 = "TTimer* obj = (TTimer*)" + std::to_string((long long)timer) + "; TQ_common_slots* sl = new TQ_common_slots(); obj->Connect(\"Timeout()\", \"TQ_common_slots\", sl, \"slot_void()\");";
+  //std::string code3 = "TQ_common_slots* sl = new TQ_common_slots(); sl->slot_void();";
+  std::cout << code3 << std::endl;
+  //gInterpreter->ProcessLine(code3.c_str());
+  //timer->Connect("Timeout()", "TQ_common_slots", sl, "slot_void()");
+  _RQ_signals(timer).Timeout() >> RQ_Slot_lamda([&s]() {
+
+      s.process();
+
+  });
   
-  TTimer *timer = new TTimer(20);
-  timer->SetCommand("update()");
+  
+ // timer->SetCommand("update()");
   timer->TurnOn();
   app.Run();
   return 0;
