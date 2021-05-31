@@ -12,6 +12,7 @@
 #include "platform.hh"
 #include "TGSignals.hh"
 
+
 const double frameTime = 0.1;
 const int frameFactor = 100000;
 const double delta_t = frameTime / frameFactor;
@@ -180,16 +181,12 @@ int main(int argc, char **argv)
 
 	TApplication app("myApp",&argc,argv);
     
-  auto anker = std::make_shared<mass_object>();
+  auto anker = Snew mass_object();
   anker->is_fixed = true;
 
-  auto p_mass = std::make_shared<mass_object>(
-    vec2d(1,0)
-  );
+  auto p_mass = Snew mass_object( vec2d(1,0) );
 
-  auto p_mass2 = std::make_shared<mass_object>(
-    vec2d(2,0)
-  );
+  auto p_mass2 = Snew mass_object(vec2d(2,0) );
   
   
   auto g      = Snew gravity(p_mass, vec2d{0,-9.81});
@@ -211,15 +208,11 @@ int main(int argc, char **argv)
   s.init();
   TTimer* timer = new TTimer(frameTime);
 
-  _RQ_signals(timer).Timeout() >> RQ_Slot_lamda([&s]() {
-
-      s.process();
-
-  });
-  
-  
+  RQ_signals(timer).Timeout() >> RQ_Slot_void([&s]() { s.process();   });
 
   timer->TurnOn();
+
+
   app.Run();
   return 0;
 

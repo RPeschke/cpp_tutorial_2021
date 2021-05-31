@@ -419,3 +419,4 @@ FodyWeavers.xsd
 *.app
 
 # End of https://www.toptal.com/developers/gitignore/api/c++
+/lbuild/

@@ -51,11 +51,7 @@ START__DEFINE_RQ_SIGNAL_DERIVED_CLASS(TEveDigitSet, TQObject)
 END__DEFINE_RQ_SIGNAL_CLASS(TEveDigitSet)
 
 
-
-template <typename T>
-class TGButton_signals :TPad_signals<T> {
-public:
-  __DEFINE_RQ_SIGNAL__CONSTRUCTOR(TGButton_signals, TPad_signals) {}
+START__DEFINE_RQ_SIGNAL_DERIVED_CLASS(TGButton, TPad)
   __DEFINE_RQ_SIGNAL__(Pressed, "Pressed()")
   __DEFINE_RQ_SIGNAL__(Released, "Released()")
   __DEFINE_RQ_SIGNAL__(Clicked, "Clicked()")
@@ -64,9 +60,8 @@ public:
   __DEFINE_RQ_SIGNAL__(MBReleased, "MBReleased()")
   __DEFINE_RQ_SIGNAL__(MBClicked, "MBClicked()")
   __DEFINE_RQ_SIGNAL__(ItemClicked, "ItemClicked(Int_t)")
-};
+END__DEFINE_RQ_SIGNAL_CLASS(TGButton)
 
-__DEFINE_RQ_SIGNAL__FACTORY(TGButton, TGButton_signals)
 
 class TGButtonGroup;
 template <typename T>
