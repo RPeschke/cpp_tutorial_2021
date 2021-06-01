@@ -301,7 +301,7 @@ START__DEFINE_RQ_SIGNAL_DERIVED_CLASS(TGSlider, TGFrame)
   __DEFINE_RQ_SIGNAL__(PositionChanged, "PositionChanged(Int_t)")
   __DEFINE_RQ_SIGNAL__(Pressed, "Pressed()")
   __DEFINE_RQ_SIGNAL__(Released ,"Released()")
-END__DEFINE_RQ_SIGNAL_CLASS(TGShutter)
+END__DEFINE_RQ_SIGNAL_CLASS(TGSlider)
 
 
 

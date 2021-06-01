@@ -144,104 +144,115 @@ void operator >> (const RQ_SIGNAL_TEMPLATE<T1>& signal_, const RQ_SLOT_TEMPLATE<
   signal_.m_object->Connect(signal_.m_name.c_str(), slot_.m_className.c_str(), slot_.m_object, slot_.m_name.c_str());
 }
 
-class defineOnConstruction {
-public:
-	
-	defineOnConstruction(std::string code) {
-		static  std::vector<std::string> m_def;
-		if (std::find(m_def.begin(), m_def.end(), code) != m_def.end()) {
-			return;
-		}
-		m_def.push_back(code);
-		//std::cout << code << std::endl;
-		gInterpreter->Declare(code.c_str());
-	}
-	
-};
-inline void RQ_Slot_lamda_slot_destroy(void* ptr);
-class RQ_Slot_lamda {
-public:
-	RQ_Slot_lamda() {
-		static  defineOnConstruction adc{
-			R"123(
-class TQ_common_slots  { 
+
+namespace __RQSignals__Internal {
+	using Pointer_Int_t = long long;
+
+	class defineOnConstruction {
 	public:
-	TQ_common_slots(long long obj, long long destroy_function){
-		m_f_destroy = (f_t) destroy_function;
-		m_ptr = (void*)obj;
-    }
-	virtual ~TQ_common_slots(){ }
-	using f_t = void(*)(void*);  
-	f_t m_f_destroy; 
-	void* m_ptr; 
-	bool Conection_is_alive = true;  
-	void destroy() { 
-		//std::cout <<  "TQ_common_slots::destroy()" <<std::endl;
-		Conection_is_alive = false; 
-		m_f_destroy(m_ptr);
-	}     
-	ClassDef(TQ_common_slots, 0)
-}; )123"
-		};
 
-	}
-	bool Conection_is_alive = true;
-	virtual ~RQ_Slot_lamda() {}
-	virtual	void destroy() {
-		//std::cout << "RQ_Slot_lamda::destroy\n";
-		Conection_is_alive = false;
-	}
-	virtual RQ_Slot_lamda* move_to_heap() = 0;
-	virtual std::string  get_function_pointer() =0;
+		defineOnConstruction(std::string code) {
+			static  std::vector<std::string> m_def;
+			if (std::find(m_def.begin(), m_def.end(), code) != m_def.end()) {
+				return;
+			}
+			m_def.push_back(code);
+			//std::cout << code << std::endl;
+			gInterpreter->Declare(code.c_str());
+		}
 
-	std::string get_destroy_ptr() const {
-		return std::to_string((long long)RQ_Slot_lamda_slot_destroy);
-	}
-	virtual std::string  get_TQ_className() = 0;
-	virtual std::string  get_TQ_slot() = 0;
-};
+	};
 
-inline void RQ_Slot_lamda_slot_destroy(void* ptr) {
-	RQ_Slot_lamda* slot = (RQ_Slot_lamda*)ptr;
-	slot->destroy();
-}
 
-std::string create_TQ_class(std::string TQ_classs_name, std::vector<std::string> arguments_t) {
-	
-	std::string args;
-	std::string argsCALL;
-	std::string start;
-	std::string f_type = "void(*)(void*";
-	int i = 0;
-	for (auto& e : arguments_t) {
-		args += start + e + "  x" + std::to_string(i);
-		start = ", ";
-		f_type += ", " + e;
-		argsCALL += ",  x" + std::to_string(i);
-	}
-	f_type += ")";
-
-	return std::string("class ") + TQ_classs_name + R"123( : public TQ_common_slots {
+	class RQ_Slot_lamda {
+	public:
+		RQ_Slot_lamda() {
+			static  defineOnConstruction adc{
+				R"123(
+using pointer_int_t_r = long long;
+	class TQ_common_slots  { 
 		public:
-			using f_type = )123"  + f_type+ R"123(;
-			 )123" + TQ_classs_name + R"123((long long fun, long long obj, long long destroy_function) : TQ_common_slots(obj, destroy_function) {
-				m_f2 = (f_type)fun;
-			}
-			virtual ~)123" + TQ_classs_name + R"123(() {
-			//	std::cout << "TQ_common_slots::~TQ_common_slots()" << std::endl;
-			}
-			f_type m_f2;
-			void slot()123" + args + R"123( ){
-				m_f2(m_ptr)123" + argsCALL+ R"123(  );
-			}
-			ClassDef()123" + TQ_classs_name + ", 0) }; ";
+		TQ_common_slots(pointer_int_t_r obj){
+			m_ptr = (void*)obj;
+		}
+		virtual ~TQ_common_slots(){ }
 
+		void* m_ptr; 
+
+
+		ClassDef(TQ_common_slots, 0)
+	}; )123"
+			};
+
+		}
+
+		virtual ~RQ_Slot_lamda() {}
+
+		virtual RQ_Slot_lamda* move_to_heap() = 0;
+		virtual std::string  get_function_pointer() = 0;
+
+
+		virtual std::string  get_TQ_className() = 0;
+		virtual std::string  get_TQ_slot() = 0;
+	};
+
+
+
+	std::string create_TQ_class(std::string TQ_classs_name, std::vector<std::string> arguments_t) {
+		std::string args;
+		std::string argsCALL;
+		std::string start;
+		std::string f_type = "void(*)(void*";
+		int i = 0;
+		for (auto& e : arguments_t) {
+			args += start + e + "  x" + std::to_string(i);
+			start = ", ";
+			f_type += ", " + e;
+			argsCALL += ",  x" + std::to_string(i);
+		}
+		f_type += ")";
+
+		return std::string("class ") + TQ_classs_name + R"123( : public TQ_common_slots {
+			public:
+				using f_type = )123" + f_type + R"123(;
+				 )123" + TQ_classs_name + R"123((pointer_int_t_r fun, pointer_int_t_r obj) : TQ_common_slots(obj) {
+					m_f2 = (f_type)fun;
+				}
+				f_type m_f2;
+				void slot()123" + args + R"123( ){
+					m_f2(m_ptr)123" + argsCALL + R"123(  );
+				}
+				ClassDef()123" + TQ_classs_name + ", 0) }; ";
+
+	}
+
+
+
+	template <typename T, typename... ARGS>
+	void RQ_Slot_lamda_slot(void* ptr, ARGS... i) {
+		T* slot = (T*)ptr;
+		slot->m_f(i...);
+	}
+
+	template <typename T>
+	class __type_to_string {
+	public:
+		static std::string get_string() {
+			return "Not implemented";
+		}
+	};
+
+
+	template <>
+	class __type_to_string<Int_t> {
+	public:
+		static std::string get_string() {
+			return "Int_t";
+		}
+	};
 }
 
-
-inline void RQ_Slot_lamda_slot_void(void* ptr);
-
-class RQ_Slot_void : public RQ_Slot_lamda {
+class RQ_Slot_void : public __RQSignals__Internal::RQ_Slot_lamda {
 public:
 	std::function<void()> m_f;
 	std::string m_TQ_classs_name = "TQ_common_slots_void";
@@ -249,10 +260,10 @@ public:
 	template <typename T>
 	RQ_Slot_void(T&& t) :m_f(std::forward<T>(t)) {
 
-		static defineOnConstruction abc{ 
+		static __RQSignals__Internal::defineOnConstruction abc{
 
-			create_TQ_class(m_TQ_classs_name,  {})
-		
+			__RQSignals__Internal::create_TQ_class(m_TQ_classs_name,  {})
+
 		 };
 	}
 	virtual RQ_Slot_lamda* move_to_heap()  override {
@@ -262,7 +273,7 @@ public:
 		m_f();
 	}
 	virtual std::string get_function_pointer() {
-		return std::to_string((long long)RQ_Slot_lamda_slot_void);
+		return std::to_string((__RQSignals__Internal::Pointer_Int_t)__RQSignals__Internal::RQ_Slot_lamda_slot<RQ_Slot_void>);
 	}
 	virtual std::string  get_TQ_className() {
 		return "TQ_common_slots_void";
@@ -272,56 +283,33 @@ public:
 	}
 };
 
-inline void RQ_Slot_lamda_slot_void(void* ptr) {
-	RQ_Slot_void* slot = (RQ_Slot_void*)ptr;
-	slot->slot_void();
-}
-
-template <typename T>
-class __type_to_string {
-public:
-	static std::string get_string() {
-		return "Not implemented";
-	}
-};
 
 
-template <>
-class __type_to_string<Int_t> {
-public:
-	static std::string get_string() {
-		return "Int_t";
-	}
-};
 
-template <typename T, typename... ARGS>
-void RQ_Slot_lamda_slot_Int_t(void* ptr, ARGS... i) {
-	T* slot = (T*)ptr;
-	slot->m_f(i...);
-}
 
 
 
 template <typename ARG_T>
-class RQ_Slot: public RQ_Slot_lamda {
+class RQ_Slot : public __RQSignals__Internal::RQ_Slot_lamda {
 public:
 
 
 	std::function<void(ARG_T)> m_f;
-	std::string m_TQ_classs_name = "TQ_common_slots_int";
-	std::vector<std::string> arguments_t = { __type_to_string<ARG_T>::get_string() };
+	std::string m_TQ_classs_name = "TQ_common_slots_";
+	std::vector<std::string> arguments_t = { __RQSignals__Internal::__type_to_string<ARG_T>::get_string() };
 	template <typename T>
 	RQ_Slot(T&& t) :m_f(std::forward<T>(t)) {
-		static defineOnConstruction abc{ 
-			create_TQ_class(m_TQ_classs_name, arguments_t)
+		m_TQ_classs_name += __RQSignals__Internal::__type_to_string<ARG_T>::get_string();
+		static __RQSignals__Internal::defineOnConstruction abc{
+			__RQSignals__Internal::create_TQ_class(m_TQ_classs_name, arguments_t)
 		 };
 	}
-	virtual RQ_Slot_lamda* move_to_heap()  override {
+	virtual __RQSignals__Internal::RQ_Slot_lamda* move_to_heap()  override {
 		return new RQ_Slot(std::move(m_f));
 	}
 
 	virtual std::string get_function_pointer() {
-		return std::to_string((long long)RQ_Slot_lamda_slot_Int_t<RQ_Slot<Int_t>,  ARG_T>);
+		return std::to_string((__RQSignals__Internal::Pointer_Int_t)__RQSignals__Internal::RQ_Slot_lamda_slot<RQ_Slot<ARG_T>,  ARG_T>);
 	}
 
 	virtual std::string  get_TQ_className() {
@@ -331,7 +319,7 @@ public:
 		std::string ret = "\"slot(";
 		std::string start = "";
 		for (auto& e : arguments_t) {
-			ret += start+ e;
+			ret += start + e;
 			start = ", ";
 		}
 		ret += ")\"";
@@ -346,103 +334,18 @@ public:
 
 
 
-void HandleDestroyed(void* ROOT_Declare_once_);
-class ROOT_Declare_once {
-public:
-	bool is_running = true;
-	~ROOT_Declare_once() {
-		is_running = false;
-	}
-	ROOT_Declare_once() {
-	
 
-		gInterpreter->Declare(
-			R"123(
-class TQ_common_slots_container  { 
-	public:	
-	std::vector<TQ_common_slots*> m_ptrs;  
-	
-	void destroy() { 	
-		//std::cout <<  "TQ_common_slots_container::destroy()" <<std::endl;
-		m_ptrs.erase(
-				std::remove_if(m_ptrs.begin(), m_ptrs.end(),
-					[](TQ_common_slots* ptr) {
-				if (ptr->Conection_is_alive) {
-					return false;
-				}
-				delete ptr;
-				return true;
-			}), m_ptrs.end()
-		);
-	} 
-
-	ClassDef(TQ_common_slots_container, 0)
-	}; 
-)123");
-
-	gInterpreter->ProcessLine("TQ_common_slots_container* gTQContainer = new TQ_common_slots_container();");
-
-		auto tr = new TThread( HandleDestroyed, this);
-		tr->Run();
-		//std::thread garbage_collector(HandleDestroyed, this);
-		//garbage_collector.detach();
-
-	}
-
-
-std::vector<RQ_Slot_lamda*> m_ptrs;
-};
-
-void HandleDestroyed(void* ROOT_Declare_once_) {
-	ROOT_Declare_once* dec_ptr = (ROOT_Declare_once*)ROOT_Declare_once_;
-
-	while (true){
-		gSystem->Sleep(1000);
-		if (!dec_ptr->is_running) {
-			return;
-		}
-		//std::cout << "HandleDestroyed\n";
-		dec_ptr->m_ptrs.erase(
-			std::remove_if(dec_ptr->m_ptrs.begin(), dec_ptr->m_ptrs.end(),
-				[](RQ_Slot_lamda* ptr) {
-			if (ptr->Conection_is_alive) {
-				return false;
-			}
-			delete ptr;
-			return true;
-		}
-			),
-			dec_ptr->m_ptrs.end()
-			);
-		try {
-			gInterpreter->ProcessLine("gTQContainer->destroy();");
-		}catch(...) {
-			std::cout << "error\n";
-
-		}
-	}
-
-}
-
-inline ROOT_Declare_once& get_ROOT_Declare_once() {
-	static ROOT_Declare_once classdec{};
-	return classdec;
-}
 
 
 template <typename T1>
-void operator >> (const RQ_SIGNAL_TEMPLATE<T1>& signal_, RQ_Slot_lamda&& slot_) {
-	auto& classdec = get_ROOT_Declare_once();
-	RQ_Slot_lamda* slot_ptr = slot_.move_to_heap();
-	classdec.m_ptrs.push_back(slot_ptr);
+void operator >> (const RQ_SIGNAL_TEMPLATE<T1>& signal_, __RQSignals__Internal::RQ_Slot_lamda&& slot_) {
 
-
+	auto slot_ptr = slot_.move_to_heap();//leak 
 	std::string code3 =
-		signal_.m_className + "* obj = (" + signal_.m_className + "*)" + std::to_string((long long)signal_.m_object) + ";" +
-		"{ auto* sl = new " + slot_ptr->get_TQ_className() +"(" +  slot_ptr->get_function_pointer() + ", "+ std::to_string((long long)slot_ptr)+", " + slot_ptr->get_destroy_ptr() +");" +
-		"gTQContainer->m_ptrs.push_back(sl);"
-		"obj->Connect(\"" + signal_.m_name + "\", \"" + slot_ptr->get_TQ_className() + "\", sl, "+ slot_ptr->get_TQ_slot() +  ");" +
-		"obj->Connect(\"Destroyed()\", \"" + slot_ptr->get_TQ_className()+"\", sl, \"destroy()\"); }";
+		signal_.m_className + "* obj = (" + signal_.m_className + "*)" + std::to_string((__RQSignals__Internal::Pointer_Int_t)signal_.m_object) + ";" +
+		"{ auto* sl = new " + slot_ptr->get_TQ_className() + "(" + slot_ptr->get_function_pointer() + ", " + std::to_string((__RQSignals__Internal::Pointer_Int_t)slot_ptr) + ");" +
+		"obj->Connect(\"" + signal_.m_name + "\", \"" + slot_ptr->get_TQ_className() + "\", sl, " + slot_ptr->get_TQ_slot() + ");}";// +
+
 
 
 	//std::cout << code3 << std::endl;

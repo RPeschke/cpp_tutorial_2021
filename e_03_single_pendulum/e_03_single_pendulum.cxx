@@ -14,8 +14,8 @@
 
 
 const double frameTime = 0.1;
-const int frameFactor = 100000;
-const double delta_t = frameTime / frameFactor;
+const int frameFactor = 1000;
+const double delta_t =0.1* frameTime / frameFactor;
 
 class vec2d{
   public:
@@ -24,10 +24,10 @@ class vec2d{
 };
 class mass_object{
 
-  vec2d m_force;
   vec2d m_force_old;
   vec2d velocity_old;
 public:
+  vec2d m_force;
   mass_object( vec2d Initial_position =vec2d(), vec2d initial_velocity = vec2d(),double mass_ = 1, bool is_fixed_ = false)
     : mass(mass_), 
     position(Initial_position), 
@@ -43,6 +43,7 @@ public:
   
   bool is_fixed = false;
 
+  bool constraint_applied = false;
 
   void draw(TGraph& gr, int index) {
   
@@ -53,15 +54,16 @@ public:
       return;
     }
 
-    velocity.x += 0.5 * (m_force.x + m_force_old.x) *i /mass;
-    velocity.y += 0.5 * (m_force.y + m_force_old.y) *i /mass;
+    velocity.x += 0.5 * (m_force.x ) *i /mass;
+    velocity.y += 0.5 * (m_force.y ) *i /mass;
 
-    position.x += 0.5*(velocity.x + velocity_old.x)*i;
-    position.y += 0.5*(velocity.y + velocity_old.y)*i;
+    position.x += 0.5*(velocity.x )*i;
+    position.y += 0.5*(velocity.y )*i;
 
     velocity_old = velocity;
     m_force_old = m_force;
     m_force = vec2d{};
+    constraint_applied = false;
   }
   void add_force(vec2d Force_){
     m_force.x += Force_.x;
@@ -80,6 +82,7 @@ class forces{
   
   virtual void apply_force() = 0;
 
+  virtual bool is_constraint() const { return false; }
 };
 class gravity:public forces{
   vec2d m_force;
@@ -127,10 +130,15 @@ class stage{
     c1 = new TCanvas();
     m_graph = std::make_shared<TGraph>();
   }
+  void init(TCanvas* canvas) {
+	  c1 = canvas;
+	  m_graph = std::make_shared<TGraph>();
+  }
   void process(){
       for (int i =0;i< frameFactor ;++i) {
         simulate(delta_t);
       }
+      c1->cd();
       Draw();  
       m_graph->Draw("A*");
       m_graph->GetXaxis()->SetLimits(-10,10);  
@@ -139,14 +147,7 @@ class stage{
       c1->Update();
 
   }
-  TCanvas* run(){
-    init();
-    for (int i =0 ;i < 100000; i++) {
-      process();
-      gSystem->Sleep(10);
-    }
-    return c1;
-  }
+
    void Draw(){
     int index =0;
     for(auto& e: m_masses){
@@ -172,44 +173,60 @@ class stage{
 
 
 
-
+#include "gui5.hh"
 
 //______________________________________________________________________________
 int main(int argc, char **argv)
 {
 
-
 	TApplication app("myApp",&argc,argv);
-    
+
+  auto g1 =   gui5();
+   //auto canvas = new gui4();
+
+   //RQ_signals(canvas->fListBox3216).DoubleClicked_int() >> RQ_Slot<Int_t>([](Int_t i) {     std::cout << i << std::endl;   });
+  stage s;
+  s.init(g1.c135);
   auto anker = Snew mass_object();
   anker->is_fixed = true;
+  s.m_masses.push_back(anker);
+
+
 
   auto p_mass = Snew mass_object( vec2d(1,0) );
+  s.m_masses.push_back(p_mass);
 
   auto p_mass2 = Snew mass_object(vec2d(2,0) );
+  s.m_masses.push_back(p_mass2);
   
   
   auto g      = Snew gravity(p_mass, vec2d{0,-9.81});
-  auto g2      = Snew gravity(p_mass2, vec2d{0,-9.81});
-  auto spring_ = Snew spring(p_mass,anker, 100,1);
-  auto spring2_ = Snew spring(p_mass,p_mass2, 100,1);
-  stage s;
-  s.m_masses.push_back(anker);
-  s.m_masses.push_back(p_mass);
-  s.m_masses.push_back(p_mass2);
   s.m_forces.push_back(g);
+
+  auto g2      = Snew gravity(p_mass2, vec2d{0,-9.81});
   s.m_forces.push_back(g2);
+
+
+  auto spring_ = Snew spring(p_mass,anker, 100,1);
   s.m_forces.push_back(spring_);
+  auto spring2_ = Snew spring(p_mass,p_mass2, 100,1);
   s.m_forces.push_back(spring2_);
 
+  //auto fixed2 = Snew fixed_distance(p_mass, p_mass2, 1);
+  //s.m_forces.push_back(fixed2);
+  //auto fixed1 = Snew fixed_distance(anker,p_mass, 1);
+  //s.m_forces.push_back(fixed1);
+   
+  
 
 
-
-  s.init();
+  //s.init();
+  
   TTimer* timer = new TTimer(frameTime);
 
   RQ_signals(timer).Timeout() >> RQ_Slot_void([&s]() { s.process();   });
 
+  
   timer->TurnOn();
 
 
