@@ -26,10 +26,24 @@ auto _RQ_slots(std::unique_ptr<T>& obj) {
 
 
 
-#define  __DEFINE_RQ_SIGNAL__(funName,SignalString) /*emits SignalString*/ \
+#define  __DEFINE_RQ_SIGNAL__(funName,SignalString ) /*emits SignalString*/ \
 RQ_SIGNAL_TEMPLATE<T>  funName() { \
 return RQ_SIGNAL_TEMPLATE<T>(this->m_object, SignalString, this->cname.Data()); \
-  }
+  }  \
+void  funName(std::function<void()>&& f) { \
+ RQ_SIGNAL_TEMPLATE<T>(this->m_object, SignalString, this->cname.Data()) >> RQ_Slot_void(std::move(f));\
+}
+
+
+
+#define  __DEFINE_RQ_SIGNAL__1(funName,SignalString, ... ) /*emits SignalString*/  \
+ RQ_SIGNAL_TEMPLATE<T>  funName() {  \
+return RQ_SIGNAL_TEMPLATE<T>(this->m_object, SignalString, this->cname.Data()); \
+}  \
+void  funName(std::function<void(__VA_ARGS__)>&& f) { \
+ RQ_SIGNAL_TEMPLATE<T>(this->m_object, SignalString, this->cname.Data()) >> RQ_Slot<__VA_ARGS__>(std::move(f));\
+}
+
 
 #define  __DEFINE_RQ_SIGNAL__CONSTRUCTOR(derivedname,baseName) derivedname<T>(T* obj, const char* ClassName) :baseName<T>(obj, ClassName) 
 
@@ -240,6 +254,9 @@ using pointer_int_t_r = long long;
 		static std::string get_string() {
 			return "Not implemented";
 		}
+		static std::string get_class_suffix() {
+			return "Not implemented";
+		}
 	};
 
 
@@ -249,7 +266,224 @@ using pointer_int_t_r = long long;
 		static std::string get_string() {
 			return "Int_t";
 		}
+		static std::string get_class_suffix() {
+			return get_string();
+		}
 	};
+
+	template <>
+	class __type_to_string<char*> {
+	public:
+		static std::string get_string() {
+			return "char*";
+		}
+		static std::string get_class_suffix() {
+			return "char_star";
+		}
+	};
+	template <>
+	class __type_to_string<const char*> {
+	public:
+		static std::string get_string() {
+			return "const char*";
+		}
+		static std::string get_class_suffix() {
+			return "c_char_star";
+		}
+	};
+	template <>
+	class __type_to_string<const TObject*> {
+	public:
+		static std::string get_string() {
+			return "const TObject*";
+		}
+		static std::string get_class_suffix() {
+			return "const_TObject_star";
+		}
+	};
+	template <>
+	class __type_to_string<TVirtualPad*> {
+	public:
+		static std::string get_string() {
+			return "TVirtualPad*";
+		}
+		static std::string get_class_suffix() {
+			return "TVirtualPad_star";
+		}
+	};
+	template <>
+	class __type_to_string<Bool_t> {
+	public:
+		static std::string get_string() {
+			return "Bool_t";
+		}
+		static std::string get_class_suffix() {
+			return "Bool_t";
+		}
+	};
+	class TEveDigitSet;
+	template <>
+	class __type_to_string<TEveDigitSet*> {
+	public:
+		static std::string get_string() {
+			return "TEveDigitSet*";
+		}
+		static std::string get_class_suffix() {
+			return "TEveDigitSet_star";
+		}
+	};
+	template <>
+	class __type_to_string<ULong_t> {
+	public:
+		static std::string get_string() {
+			return "Window_t";
+		}
+		static std::string get_class_suffix() {
+			return "Window_t";
+		}
+	};
+	template <>
+	class __type_to_string<Event_t*> {
+	public:
+		static std::string get_string() {
+			return "Event_t*";
+		}
+		static std::string get_class_suffix() {
+			return "Event_t_star";
+		}
+	};
+
+
+	class Style_t;
+	template <>
+	class __type_to_string<Style_t> {
+	public:
+		static std::string get_string() {
+			return "Style_t";
+		}
+		static std::string get_class_suffix() {
+			return "Style_t";
+		}
+	};
+
+	class TGShutterItem;
+	template <>
+	class __type_to_string<TGShutterItem*> {
+	public:
+		static std::string get_string() {
+			return "TGShutterItem*";
+		}
+		static std::string get_class_suffix() {
+			return "TGShutterItem_star";
+		}
+	};
+
+	
+	class TGVFileSplitter;
+	template <>
+	class __type_to_string<TGVFileSplitter*> {
+	public:
+		static std::string get_string() {
+			return "TGVFileSplitter*";
+		}
+		static std::string get_class_suffix() {
+			return "TGVFileSplitter_star";
+		}
+	};
+
+	class TQCommand;
+
+	template <>
+	class __type_to_string<TQCommand*> {
+	public:
+		static std::string get_string() {
+			return "TQCommand*";
+		}
+		static std::string get_class_suffix() {
+			return "TQCommand_star";
+		}
+	};
+
+	class TGLPhysicalShape;
+
+	template <>
+	class __type_to_string<TGLPhysicalShape*> {
+	public:
+		static std::string get_string() {
+			return "TGLPhysicalShape*";
+		}
+		static std::string get_class_suffix() {
+			return "TGLPhysicalShape_star";
+		}
+	};
+	class TGLVEntry;
+	template <>
+	class __type_to_string<TGLVEntry*> {
+	public:
+		static std::string get_string() {
+			return "TGLVEntry*";
+		}
+		static std::string get_class_suffix() {
+			return "TGLVEntry_star";
+		}
+	};
+	class TGLViewerBase;
+	
+	template <>
+	class __type_to_string<TGLViewerBase*> {
+	public:
+		static std::string get_string() {
+			return "TGLViewerBase*";
+		}
+		static std::string get_class_suffix() {
+			return "TGLViewerBase_star";
+		}
+	};
+	
+
+	class TGListTreeItem;
+	template <>
+	class __type_to_string<TGListTreeItem*> {
+	public:
+		static std::string get_string() {
+			return "TGListTreeItem*";
+		}
+		static std::string get_class_suffix() {
+			return "TGListTreeItem_star";
+		}
+	};
+
+	class TDNDData;
+	template <>
+	class __type_to_string<TDNDData*> {
+	public:
+		static std::string get_string() {
+			return "TDNDData*";
+		}
+		static std::string get_class_suffix() {
+			return "TDNDData_star";
+		}
+	};
+	template <typename T1>
+	std::string get_class_suffix() {
+		return __type_to_string<T1>::get_class_suffix();
+	}
+	template <typename T1, typename... ARGS>
+	std::enable_if_t< sizeof...(ARGS)  , std::string> get_class_suffix() {
+		return __type_to_string<T1>::get_class_suffix() +"_"+ get_class_suffix<ARGS...>();
+	}
+
+	template <typename T1>
+	std::vector<std::string> get_type_strings() {
+		return { __type_to_string<T1>::get_string() };
+	}
+	template <typename T1, typename... ARGS>
+	std::enable_if_t< sizeof...(ARGS), std::vector<std::string>> get_type_strings() {
+		
+		auto ret = get_type_strings<ARGS...>();
+		ret.push_back(__type_to_string<T1>::get_string());
+		return  ret;
+	}
 }
 
 class RQ_Slot_void : public __RQSignals__Internal::RQ_Slot_lamda {
@@ -289,17 +523,19 @@ public:
 
 
 
-template <typename ARG_T>
+template <typename... ARG_T>
 class RQ_Slot : public __RQSignals__Internal::RQ_Slot_lamda {
 public:
 
 
-	std::function<void(ARG_T)> m_f;
+	std::function<void(ARG_T...)> m_f;
 	std::string m_TQ_classs_name = "TQ_common_slots_";
-	std::vector<std::string> arguments_t = { __RQSignals__Internal::__type_to_string<ARG_T>::get_string() };
+	std::vector<std::string> arguments_t;
 	template <typename T>
 	RQ_Slot(T&& t) :m_f(std::forward<T>(t)) {
-		m_TQ_classs_name += __RQSignals__Internal::__type_to_string<ARG_T>::get_string();
+		m_TQ_classs_name += __RQSignals__Internal::get_class_suffix<ARG_T...>();
+		arguments_t = __RQSignals__Internal::get_type_strings<ARG_T...>();
+
 		static __RQSignals__Internal::defineOnConstruction abc{
 			__RQSignals__Internal::create_TQ_class(m_TQ_classs_name, arguments_t)
 		 };
@@ -309,7 +545,7 @@ public:
 	}
 
 	virtual std::string get_function_pointer() {
-		return std::to_string((__RQSignals__Internal::Pointer_Int_t)__RQSignals__Internal::RQ_Slot_lamda_slot<RQ_Slot<ARG_T>,  ARG_T>);
+		return std::to_string((__RQSignals__Internal::Pointer_Int_t)__RQSignals__Internal::RQ_Slot_lamda_slot<RQ_Slot<ARG_T...>,  ARG_T...>);
 	}
 
 	virtual std::string  get_TQ_className() {

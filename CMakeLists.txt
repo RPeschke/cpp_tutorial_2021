@@ -18,5 +18,6 @@ add_subdirectory(e_02_hello_root)
 add_subdirectory(e_03_single_pendulum)
 add_subdirectory(e_04_phys_sim_header_library)
 add_subdirectory(e_05_use_phys_sim)
-add_subdirectory(e_06_catch2)
+#add_subdirectory(e_06_catch2)
+add_subdirectory(e_07_tomography)
 

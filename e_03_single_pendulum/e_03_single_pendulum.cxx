@@ -1,5 +1,5 @@
 #include <iostream>
-
+#include <functional>
 #include "TMath.h"
 #include "TGraph.h"
 #include "TRandom.h"
@@ -174,17 +174,37 @@ class stage{
 
 
 #include "gui5.hh"
+#define  my_fun0(Name,Signal) void Name(std::function<void()>&& f ){ \
+std::cout << Signal << std::endl; \
+f(); \
+  }
 
+#define  my_fun(Name,Signal,...) void Name(std::function<void(__VA_ARGS__)>&& f ){ \
+std::cout << Signal << std::endl; \
+f(); \
+  }
+
+my_fun(test1, "adas",void)
 //______________________________________________________________________________
 int main(int argc, char **argv)
 {
 
+
+    auto r = __RQSignals__Internal::get_class_suffix<Int_t,Int_t>();
+    auto r1 = __RQSignals__Internal::get_type_strings<Int_t, Int_t>();
+    
+    test1([](int i =0 ) {
+        std::cout << i << std::endl;
+    });
 	TApplication app("myApp",&argc,argv);
 
   auto g1 =   gui5();
    //auto canvas = new gui4();
 
-   //RQ_signals(canvas->fListBox3216).DoubleClicked_int() >> RQ_Slot<Int_t>([](Int_t i) {     std::cout << i << std::endl;   });
+   RQ_signals(g1.fListBox4548).ChangedBy(
+       [](char* i) {     
+       std::cout << i << std::endl;  
+ });
   stage s;
   s.init(g1.c135);
   auto anker = Snew mass_object();
@@ -224,7 +244,7 @@ int main(int argc, char **argv)
   
   TTimer* timer = new TTimer(frameTime);
 
-  RQ_signals(timer).Timeout() >> RQ_Slot_void([&s]() { s.process();   });
+  RQ_signals(timer).Timeout([&s]() { s.process();   });
 
   
   timer->TurnOn();
