@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 project(cpp_tutorial_2021)
 
+
+add_compile_definitions(__CPP20__)
+
+
+
 if(DEFINED ENV{vcpkg_cmake_toolchain})
     message( "vcpkg_cmake_toolchain = $ENV{vcpkg_cmake_toolchain}")
     include($ENV{vcpkg_cmake_toolchain})
@@ -21,3 +26,4 @@ add_subdirectory(e_05_use_phys_sim)
 #add_subdirectory(e_06_catch2)
 add_subdirectory(e_07_tomography)
 
+add_subdirectory(e_08_function_templates_and_ranges)
