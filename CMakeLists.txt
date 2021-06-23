@@ -27,3 +27,4 @@ add_subdirectory(e_05_use_phys_sim)
 add_subdirectory(e_07_tomography)
 
 add_subdirectory(e_08_function_templates_and_ranges)
+add_subdirectory(e_09_tomography_with_filter)
