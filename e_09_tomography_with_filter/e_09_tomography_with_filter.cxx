@@ -36,7 +36,14 @@ AXIS_NAME(projection, double);
 
 
 
+using img_vect_e = std::tuple< height, Width, Color>;
+using img_vect_t = std::vector<img_vect_e>;
 
+using sinogram_e = std::tuple<angle, x_axis, projection>;
+using sinogram_t = std::vector<sinogram_e >;
+
+using img_vect_rec_e = std::tuple<height, Width, Color_d>;
+using img_vect_rec_t = std::vector<img_vect_rec_e >;
 
 template <typename T1, typename T>
 T1 get_element(T& vec, size_t i) {
@@ -99,7 +106,7 @@ std::vector<double> get_filter_core() {
 	return { -1.0 / (TMath::Pi() * TMath::Pi()) , 1.0 / 4, -1.0 / (TMath::Pi() * TMath::Pi()) };
 }
 
-std::vector<std::tuple< height, Width, Color>> image2vector(TImage* img) {
+img_vect_t image2vector(TImage* img) {
 	auto argb = img->GetArgbArray();
 	int h = img->GetHeight();
 	int w = img->GetWidth();
@@ -116,7 +123,7 @@ std::vector<std::tuple< height, Width, Color>> image2vector(TImage* img) {
 	);
 }
 
-std::vector<std::tuple<angle, x_axis, projection>> imgVector2Projection(const std::vector<std::tuple< height, Width, Color>>& imVec, double angle_radiand) {
+sinogram_t imgVector2Projection(const img_vect_t& imVec, double angle_radiand) {
 	auto df_projection = fill_vector(imVec,
 		[&](const auto& e) -> angle { return angle_radiand; },
 		[&](const auto& e) -> x_axis { return (height(e)) * TMath::Cos(angle_radiand) - (Width(e)) * TMath::Sin(angle_radiand); },
@@ -136,8 +143,8 @@ std::vector<std::tuple<angle, x_axis, projection>> imgVector2Projection(const st
 }
 
 
-std::vector<std::tuple<angle, x_axis, projection>> imgVector2Sinogram(const std::vector<std::tuple< height, Width, Color>>& imVec) {
-	std::vector<std::tuple<angle, x_axis, projection>> df_summed;
+sinogram_t imgVector2Sinogram(const img_vect_t& imVec) {
+	sinogram_t df_summed;
 	for (double angle_ = 0; angle_ < 180; angle_ += 1) {
 		const auto df_summed_projection = imgVector2Projection(imVec, TMath::DegToRad() * angle_);
 		df_summed.insert(std::end(df_summed), std::begin(df_summed_projection), std::end(df_summed_projection));
@@ -148,7 +155,7 @@ std::vector<std::tuple<angle, x_axis, projection>> imgVector2Sinogram(const std:
 
 
 
-std::vector<std::tuple<height, Width, Color_d>> reconstruct(std::vector<std::tuple<angle, x_axis, projection>> df_sinograph, int grid) {
+img_vect_rec_t reconstruct(const sinogram_t& df_sinograph, int grid) {
 	auto df_grouped = group_helper::group<angle>::get(df_sinograph);
 
 
@@ -179,7 +186,7 @@ std::vector<std::tuple<height, Width, Color_d>> reconstruct(std::vector<std::tup
 
 }
 
-std::vector<std::tuple<  angle, x_axis, projection>> apply_filter(const std::vector<std::tuple<angle, x_axis, projection>>& df_sinogram, std::vector<double> FilterCore) {
+sinogram_t apply_filter(const sinogram_t& df_sinogram, std::vector<double> FilterCore) {
 
 
 	auto df_filtered = group_helper::group<angle>::apply1(df_sinogram,
@@ -211,8 +218,8 @@ int main(int argc, char** argv) {
 	auto name_pro = __get__name__(projection());
 
 
-	TImage* img = TImage::Open("C:/Users/Richa/Documents/github/cpp_tutorial_2021/e_07_tomography/threedots.jpg");
-	const std::string oFileName = "test11.root";
+	TImage* img = TImage::Open("../../e_07_tomography/threedots.jpg");
+	const std::string oFileName = "test12.root";
 
 	auto argb = img->GetArgbArray();
 
