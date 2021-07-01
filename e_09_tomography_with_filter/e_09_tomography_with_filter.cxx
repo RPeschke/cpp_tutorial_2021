@@ -34,10 +34,18 @@ AXIS_NAME(angle, double);
 AXIS_NAME(x_axis, int);
 AXIS_NAME(projection, double);
 
+AXIS_NAME(height_frequency, double);
+AXIS_NAME(Width_frequency, double);
+AXIS_NAME(Intensity_real, double);
+AXIS_NAME(Intensity_img, double);
+
 
 
 using img_vect_e = std::tuple< height, Width, Color>;
 using img_vect_t = std::vector<img_vect_e>;
+
+using img_fourier_e = std::tuple< height_frequency, Width_frequency, Intensity_real, Intensity_img>;
+using img_fourier_t = std::vector<img_fourier_e>;
 
 using sinogram_e = std::tuple<angle, x_axis, projection>;
 using sinogram_t = std::vector<sinogram_e >;
@@ -209,9 +217,64 @@ sinogram_t apply_filter(const sinogram_t& df_sinogram, std::vector<double> Filte
 	return df_filtered;
 }
 
+template <typename T,typename T1, typename T2>
+bool element_not_containt_in_vector(const T1& element, const T2& vector_) {
+	return std::find_if(vector_.begin(), vector_.end(), [&](const auto& e1) { return e1 == T(element);  }) == vector_.end();
+}
 
+
+template <typename T1, typename T2> 
+auto fourier_2d(const T2& vec) {
+	
+	const auto [min_height, max_height, min_Width, max_Width] = [&]() {
+
+		double max_height = -10000;
+		double max_Width = -100000;
+		double min_height = 100000;
+		double min_Width = 100000;
+		for (const auto& e : vec) {
+			max_height = std::max((double)height(e), max_height);
+			max_Width = std::max((double)Width(e), max_Width);
+			min_height = std::min((double)height(e), min_height);
+			min_Width = std::min((double)Width(e), min_Width);
+		}
+		return std::make_tuple(min_height, max_height, min_Width, max_Width);
+	}();
+
+	
+	auto df_filtered = group_helper::group<height, Width>::apply(vec,
+		[&](const auto& e) -> height_frequency { return (height(e[0])  - min_height) /( max_height - min_height) ; },
+		[&](const auto& e) -> Width_frequency { return  (Width(e[0]) - min_Width)  / (max_Width - min_Width); },
+		[&](const auto& e) -> Intensity_real {
+			double ret_real = 0;
+			const auto  e_height = (height(e[0]) - min_height) / (max_height - min_height);
+			const auto  e_Width  = (Width(e[0]) - min_Width) / (max_Width - min_Width);
+			for (const auto& e1 : vec) {
+				ret_real += 1.0 * T1(e1) * TMath::Cos(-2.0 * TMath::Pi() * (height(e1) * e_height + Width(e1) * e_Width));
+			}
+			return  ret_real; 
+		},
+		[&](const auto& e)  -> Intensity_img {
+			double ret_img = 0;
+			const auto  e_height = (height(e[0]) - min_height) / (max_height - min_height);
+			const auto  e_Width = (Width(e[0]) - min_Width) / (max_Width - min_Width);
+			for (const auto& e1 : vec) {
+				ret_img += 1.0 * T1(e1) * TMath::Sin(-2.0 * TMath::Pi() * (height(e1) * e_height + Width(e1) * e_Width));
+			}
+			return  ret_img; 
+		}
+	);
+
+	return df_filtered;
+
+}
 //______________________________________________________________________________
 int main(int argc, char** argv) {
+
+
+
+
+
 
 
 
@@ -219,11 +282,15 @@ int main(int argc, char** argv) {
 
 
 	TImage* img = TImage::Open("../../e_07_tomography/threedots.jpg");
-	const std::string oFileName = "test12.root";
+	const std::string oFileName = "test13.root";
 
 	auto argb = img->GetArgbArray();
 
-	const auto df_img = image2vector(img);
+	auto df_img = image2vector(img);
+
+
+
+
 	const auto df_summed = imgVector2Sinogram(df_img);
 	
 	const int i_max = TMath::Max(img->GetHeight(), img->GetWidth());
@@ -244,7 +311,10 @@ int main(int argc, char** argv) {
 	save(oFileName, df_reconstructed_filtered, "df_reconstructed_filtered", "update");
 	save(oFileName, df_filtered, "df_sinogram_filtered", "update");
 	
-
-
-
+	auto fourier_filtered = fourier_2d<Color_d>(df_reconstructed_filtered);
+	save(oFileName, fourier_filtered, "fourier_filtered", "update");
+	auto fourier_original = fourier_2d<Color>(df_img);
+	save(oFileName, fourier_original, "fourier_original", "update");
+	auto fourier_reco = fourier_2d<Color_d>(df_reconstructed);
+	save(oFileName, fourier_reco, "fourier_reco", "update");
 }

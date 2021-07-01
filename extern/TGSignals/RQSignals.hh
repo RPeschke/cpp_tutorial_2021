@@ -67,6 +67,7 @@ T* m_object; \
  CLASSNAME##_signals(T* obj, const char* ClassName) : m_object(obj), cname(ClassName) {}
 
 #define START__DEFINE_RQ_SIGNAL_DERIVED_CLASS(CLASSNAME,BASE_CLASS) class CLASSNAME; \
+class BASE_CLASS; \
 template <typename T> \
 class  CLASSNAME##_signals : public BASE_CLASS##_signals<T> {\
 public: \

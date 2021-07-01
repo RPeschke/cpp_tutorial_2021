@@ -14,6 +14,7 @@ else()
 endif()
 
 include_directories("extern/TGSignals")
+include_directories("extern/group_helpers")
 
 add_subdirectory(e_01_hello_world)
 
@@ -28,3 +29,5 @@ add_subdirectory(e_07_tomography)
 
 add_subdirectory(e_08_function_templates_and_ranges)
 add_subdirectory(e_09_tomography_with_filter)
+add_subdirectory(e_10_ranges)
+add_subdirectory(e_11_Fourier_transform)
