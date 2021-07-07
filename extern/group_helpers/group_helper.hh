@@ -237,6 +237,36 @@ inline std::string __get__name__and_type(const name_&){ return std::string(#name
         return ret;
 	}
 
+	template <typename VEC_T, typename FUNC_T>
+	static auto apply2(const std::vector<VEC_T>& vec, FUNC_T&& fun)
+	{
+		//    auto xasda = std::tuple_cat(std::tuple<T...>(), fun(__range__(std::begin(vec), std::end(vec)))[0]);
+
+		std::vector<  decltype(std::tuple_cat(std::tuple<T...>(), fun(__range__(std::begin(vec), std::end(vec)))))  > ret;
+
+		auto tail = std::begin(vec);
+
+		for (auto head = std::begin(vec); head != std::end(vec); ++head) {
+			if (!group<T...>::__isEequal<VEC_T, T...>(*head, *tail)) {
+				auto dummy = fun(__range__(tail, head));
+				
+				ret.push_back(std::tuple_cat(std::make_tuple(std::get<T>(*tail)...), dummy));
+				
+				tail = head;
+			}
+		}
+
+
+		auto dummy = fun(__range__(tail, std::end(vec)));
+		
+		ret.push_back(std::tuple_cat(std::make_tuple(std::get<T>(*tail)...), dummy));
+		
+
+		//ret.emplace_back(std::get<T>(*tail)..., fun(__range__(tail, std::end(vec)))...);
+		return ret;
+	}
+
+
     template <typename A1 , typename... ARGGS>
     struct __get_element {
 

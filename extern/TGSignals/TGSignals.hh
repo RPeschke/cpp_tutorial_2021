@@ -1,5 +1,7 @@
 #ifndef TGSignals_h__
 #define TGSignals_h__
+#include "TImage.h"
+#include "TApplication.h"
 #include "RQSignals.hh"
 
 

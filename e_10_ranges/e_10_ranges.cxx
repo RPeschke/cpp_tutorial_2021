@@ -7,6 +7,9 @@
 #include <tuple>
 #include "TMath.h"
 #include <bitset>
+
+#include <optional>
+
 using namespace group_helper;
 class never_itterator {
 
@@ -180,6 +183,43 @@ auto repeat(const T& val) {
 	);
 }
 
+template <typename data_T , typename NEXT_FUN_T, typename VALID_FUNT_T>
+class fun2_itterator {
+public:
+
+	std::remove_reference_t<NEXT_FUN_T> m_fun;
+	std::remove_reference_t<VALID_FUNT_T> m_fun_valid;
+	data_T m_buffer;
+
+	fun2_itterator( NEXT_FUN_T&& fun, VALID_FUNT_T&& valid_fun) :m_fun_valid(std::forward< VALID_FUNT_T >(valid_fun)), m_fun(std::forward< NEXT_FUN_T >(fun)) {}
+	auto operator*() const {
+		return  m_buffer;
+	}
+
+	auto operator*() {
+		return  m_buffer;
+	}
+
+
+	fun2_itterator& operator++() { m_buffer = m_fun(); return *this; }
+	fun2_itterator operator++(int) { fun2_itterator tmp = *this; ++(*this); return tmp; }
+
+	template <typename T>
+	bool operator!= (T&& t) {
+		return  m_fun_valid();
+	}
+
+};
+
+template <typename  NEXT_FUN_T, typename VALID_FUNT_T>
+auto make_fun2itterator(NEXT_FUN_T&& fun, VALID_FUNT_T&& valid_fun) {
+	fun2_itterator<int, NEXT_FUN_T, VALID_FUNT_T> ret(
+		std::forward<NEXT_FUN_T>(fun),
+		std::forward<VALID_FUNT_T>(valid_fun)
+		);
+
+	return ret;
+}
 
 //template <T>
 //class zip_itt {
@@ -205,6 +245,51 @@ auto repeat(const T& val) {
 
 
 
+template <typename data_T, typename NEXT_FUN_T>
+class fun_optional_itterator {
+public:
+
+	std::remove_reference_t<NEXT_FUN_T> m_fun;
+	
+	data_T m_buffer;
+
+	fun_optional_itterator(NEXT_FUN_T&& fun) :m_fun(std::forward< NEXT_FUN_T >(fun)) {
+		m_buffer = m_fun();
+	}
+	auto operator*() const {
+		return  *m_buffer;
+	}
+
+
+
+	fun_optional_itterator& operator++() { m_buffer = m_fun(); return *this; }
+	fun_optional_itterator operator++(int) { fun2_itterator tmp = *this; ++(*this); return tmp; }
+
+	template <typename T>
+	bool operator!= (T&& t) {
+		return  bool(m_buffer);
+	}
+
+};
+
+template <typename  NEXT_FUN_T>
+auto make_fun_optional_itterator(NEXT_FUN_T&& fun) {
+	fun_optional_itterator<decltype(fun()), NEXT_FUN_T> ret(
+		std::forward<NEXT_FUN_T>(fun)
+		
+	);
+
+	return ret;
+}
+
+
+template <typename  NEXT_FUN_T>
+auto make_range_optional(NEXT_FUN_T&& fun) {
+	return __range__(
+		make_fun_optional_itterator(std::forward< NEXT_FUN_T>(fun)),
+		never_itterator()
+	);
+}
 
 
 struct Compare_true {
@@ -259,11 +344,144 @@ auto vec_zip(const T1& t1,const  T2& t2, projecttion_t project = to_pair()) {
 }
 
 
+
+template <typename T1, typename T2, typename projecttion_t = to_pair>
+auto l_zip(const T1& t1, const  T2& t2, projecttion_t project = to_pair()) {
+
+
+	return make_range_optional([
+		t1_itt = t1.begin(),
+		t1_end = t1.end(),
+		t2_itt = t2.begin(),
+		t2_end = t2.end(),
+		project
+	]() mutable->std::optional< decltype(project(*t1.begin(), *t2.begin()))  >{
+		if (!(t1_itt != t1_end && t2_itt != t2_end))  return {};
+
+		auto ret = project(*t1_itt, *t2_itt);
+		++t1_itt; ++t2_itt;
+		
+		return ret;
+
+	});
+
+
+
+}
+
+template <typename T>
+auto to_vector(T&& t) {
+	std::vector<decltype(*t.begin())> ret;
+	for (const auto e : t) {
+		ret.push_back(e);
+	}
+	return ret;
+}
+
+template <typename T>
+const std::vector<T>& to_vector(const std::vector<T>& t) {
+	return t;
+}
+
+template <typename T1, typename T2, typename projecttion_t = to_pair>
+auto l_join(const T1& t1, const T2& t2, projecttion_t project = to_pair()) {
+
+
+	return make_range_optional([
+			t1_itt = t1.begin(),
+			t2_index = 0,
+			t1,
+			t2 = to_vector(t2),
+			project
+	]() mutable->std::optional< decltype(project(*t1.begin(), *t2.begin()))  >{
+			if (t2_index == t2.size()) {
+				t2_index =0;
+				++t1_itt;
+			}
+			
+			if (!(t1_itt != t1.end()))  return {};
+			auto ret = project(*t1_itt, t2[t2_index]);
+			++t2_index;
+
+			return ret;
+			
+
+		});
+
+}
+
+
+
+template <typename T>
+auto l_numbers(T&& t) {
+	return make_range_optional([I = 0, t]() mutable->std::optional< std::remove_reference_t<T>>{
+		if (I >= t)  return {};
+		int inter = I;
+		++I;
+		return { inter };
+	});
+}
+
+template <typename T1, typename T2>
+auto l_numbers(T1&& start_, T2&& end_) {
+	return make_range_optional([I = start_, end_]() mutable->std::optional<std::remove_reference_t<T1>>{
+		if (I >= end_)  return {};
+		int inter = I;
+		++I;
+		return { inter };
+	});
+}
+
+
 int main(int argc, char** argv) {
 
+
+ 	for (auto e : l_join(l_numbers(0, 5), l_numbers(5, 10), {})) {
+ 		std::cout << e.first << "  " << e.second << "\n";
+ 	}
+
+	auto asdasdaweqe =  to_vector(l_numbers(5, 10));
+	for (auto e : l_join(l_numbers(0, 5), asdasdaweqe, {})) {
+		std::cout << e.first << "  " << e.second << "\n";
+	}
+
+	for (auto e : l_zip(l_numbers(0, 5), l_numbers(5,10), {})) {
+		std::cout << e.first << "  " << e.second << "\n";
+	}
+	auto opf = [](auto i) -> std::optional<double> {
+		if (i > 10) {
+			return i++;
+		}
+		return {};
+	};
+	decltype(opf(1)) a;
+
+	auto it = make_fun_optional_itterator([i = 10]() mutable->std::optional<int>  {
+		return i++;
+	});
 	
+	std::cout << *it << std::endl;
+	std::cout << *it << std::endl;
+	++it;
+	std::cout << *it << std::endl;
 
 
+
+
+
+	std::cout << *opf(11) << std::endl;
+	std::cout << *opf(1) << std::endl;
+	std::cout << bool(opf(1)) << std::endl;
+	std::cout << bool(opf(11)) << std::endl;
+	auto itt1 = make_fun2itterator([i = int(0)]()mutable  { return ++i; }, [] { return true; });
+	auto num1 =  __range__(
+		itt1,
+		never_itterator()
+	);
+
+	for (auto e : num1) {
+		std::cout << e << std::endl;
+	}
 	auto x = Numbers(0, 10);
 	for (auto e : Numbers(0,10)){ 		
 		std::cout << e << std::endl; 	
