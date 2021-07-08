@@ -120,7 +120,7 @@ struct expanding_ring {
 			ret = true;
 		}
 		last_distance_to_point = current_distance_to_point_1;
-return ret;
+		return ret;
 	}
 
 
@@ -250,39 +250,41 @@ auto lorenz_boost(const T& vec,const  double Velocity) {
 }
 
 
-template <typename T>
-auto interpolate_range( const T& vec, double time){
-	std::tuple<df_time, x_t, y_t > ret;
-	decltype(*vec.begin()) last{};
-	bool isvalid = false;
-	for (const auto& e :vec){
-		if (TMath::Abs(df_time(e) - time) > 0.3) {
-			continue;
-		}
-		if ((df_time(e) - time) * (df_time(last) - time) < 0 && isvalid) {
-		
-			ret = std::make_tuple(
-				time,
-				(x_t(e) - x_t(last))/(df_time(e) - df_time(last) )*(time - df_time(last) ) , 
-				(y_t(e) - y_t(last)) / (df_time(e) - df_time(last)) * (time - df_time(last))
-			);
-			break;
-		}
-		isvalid = true;
+
+template <typename... AXIS_T>
+struct interpolate {
+
+	template <typename T0, typename T1, typename T>
+	static auto interpolate_element(const T& e, const T& last, double time) {
+		return (T0(e) - T0(last)) / (T1(e) - T1(last)) * (time - T1(last)) + T0(last);
 	}
-	return ret;
-}
 
+	template <typename T, typename T2>
+	static auto apply(const T& vec, const T2& time) {
+		std::tuple<AXIS_T...> ret;
+		std::remove_cvref_t< decltype(*vec.begin())> last{};
+		bool isvalid = false;
+		for (const auto& e : vec) {
+			if (TMath::Abs(T2(e) - time) > 0.3) {
+				continue;
+			}
+			if ((T2(e) - time) * (T2(last) - time) <= 0 && isvalid) {
 
-template <typename T>
-auto interpolate_time(const T& vec, double time) {
-	return group<Object_ID>::apply2(vec,
-
-		[&](auto InRange) {
-			return  interpolate_range(InRange, time);
+				ret = std::make_tuple(
+					interpolate_element<AXIS_T, T2>(e, last, time)...
+				);
+				break;
+			}
+			isvalid = true;
+			last = e;
 		}
-	);
-}
+		return ret;
+	}
+
+
+
+
+};
 
 
 std::tuple< TCanvas*, TGraph_sp> make_canvas() {
@@ -458,7 +460,7 @@ int main(int argc, char** argv) {
 	TApplication app("myApp", &argc, argv);
 	auto [c1, g] = make_canvas();
 
-	const double signalVelocity = 0.5;
+	const double signalVelocity =1;
 	const double ObserverVelocity = 0.4;
 	auto df = create_Michelson_Morley_dataset(signalVelocity, ObserverVelocity,100);
 
@@ -489,7 +491,13 @@ int main(int argc, char** argv) {
 		graphs.clear();
 		time_index += frameTime_in_ms / 1000.0;
 
-		auto df1 = interpolate_time(df, time_index);
+		auto df1 = group<Object_ID>::apply2(df,
+
+			[&](auto InRange) {
+			return   interpolate<df_time, x_t, y_t>::apply(InRange, df_time(time_index));
+		}
+		);
+		//auto df1 = interpolate<df_time, x_t, y_t>::apply(df, time_index);
 	
 		auto g1 = ::plot<x_t, y_t>(df1, "same*");
 		
