@@ -314,13 +314,13 @@ df_objects create_Michelson_Morley_dataset(double SignalVelocity, double Observe
 		std::make_tuple(v_x_t(ObserverVelocity) , v_y_t(0)),
 		SignalVelocity
 	};
-	center_to_A.start(0.1);
+	center_to_A.start(0.01);
 	expanding_ring center_to_B{
 		std::make_tuple(x_t(0), y_t(0)),
 		std::make_tuple(v_x_t(ObserverVelocity) , v_y_t(0)),
 		SignalVelocity
 	};
-	center_to_B.start(0.1);
+	center_to_B.start(0.01);
 
 
 
@@ -460,9 +460,11 @@ int main(int argc, char** argv) {
 	TApplication app("myApp", &argc, argv);
 	auto [c1, g] = make_canvas();
 
-	const double signalVelocity =1;
-	const double ObserverVelocity = 0.4;
-	auto df = create_Michelson_Morley_dataset(signalVelocity, ObserverVelocity,100);
+	const double signalVelocity =0.5;
+	const double ObserverVelocity = 0.3;
+	
+	auto df = create_dataset(signalVelocity, ObserverVelocity, 100);
+	//auto df = create_Michelson_Morley_dataset(signalVelocity, ObserverVelocity,100);
 
 
 	auto df_boost = lorenz_boost(df, ObserverVelocity);
