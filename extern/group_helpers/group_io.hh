@@ -3,7 +3,7 @@
 #include "TFile.h"
 #include "TTree.h"
 
-
+#include "group_concepts.hh"
 
 
 template <typename T>
@@ -39,14 +39,14 @@ void add_branch(TTree* tree, const std::string& prefix, std::pair<T...>& element
 
 }
 
-template <typename T>
-void save(const std::string& FileName, const std::vector<T>& vec, const std::string& BranchName, const std::string& FileNode = "RECREATE") {
+template <group_helper::range_container_t T>
+void save(const std::string& FileName, const T& vec, const std::string& BranchName, const std::string& FileNode = "RECREATE") {
 	TFile* f = new TFile(FileName.c_str(), FileNode.c_str());
 
 	TTree* tree = new TTree(BranchName.c_str(), BranchName.c_str());
-	T element{};
+	std::remove_cvref_t<decltype(*vec.begin())> element{};
 
-	add_branch<std::tuple_size_v<T> -1 >(tree, "", element);
+	add_branch<std::tuple_size_v< decltype(element)> -1 >(tree, "", element);
 	for (const auto& e : vec) {
 		element = e;
 		tree->Fill();

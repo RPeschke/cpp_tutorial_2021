@@ -16,6 +16,11 @@ endif()
 include_directories("extern/TGSignals")
 include_directories("extern/group_helpers")
 
+
+
+add_subdirectory(extern/im_libs)
+
+
 add_subdirectory(e_01_hello_world)
 
 
@@ -33,3 +38,13 @@ add_subdirectory(e_10_ranges)
 add_subdirectory(e_11_Fourier_transform)
 #add_subdirectory(e_12_special_relativity)
 add_subdirectory(e_13_special_relativity_2)
+add_subdirectory(e_14_special_relativity_Twin_paradox)
+add_subdirectory(e_16_doppler_effect)
+add_subdirectory(e_17_implot)
+
+add_subdirectory(e_18_doppler_effect_imgui)
+
+
+
+
+

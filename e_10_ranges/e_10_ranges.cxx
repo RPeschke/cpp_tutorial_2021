@@ -1,4 +1,5 @@
 #include "group_helper.hh"
+#include "group_optional_range.hh"
 #include <iostream>
 #include <unordered_map>
 #include <algorithm>
@@ -11,9 +12,7 @@
 #include <optional>
 
 using namespace group_helper;
-class never_itterator {
 
-};
 
 template <typename Itterator_t>
 class group_itt_base {
@@ -33,15 +32,15 @@ bool operator== (const group_itt_base<T1>& a, const group_itt_base<T2>& b) { ret
 template <typename T1, typename T2>
 bool operator!= (const group_itt_base<T1>& a, const group_itt_base<T2>& b) { return a.m_itt != b.m_itt; };
 
-template <typename T1>
-bool operator== (const group_itt_base<T1>& a, const never_itterator& b) { return false; };
-template <typename T1>
-bool operator!= (const group_itt_base<T1>& a, const never_itterator& b) { return true; };
-
-template <typename T1>
-bool operator== (const never_itterator& b, const group_itt_base<T1>& a) { return false; };
-template <typename T1>
-bool operator!= (const never_itterator& b, const group_itt_base<T1>& a) { return true; };
+//template <typename T1>
+//bool operator== (const group_itt_base<T1>& a, const never_itterator& b) { return false; };
+//template <typename T1>
+//bool operator!= (const group_itt_base<T1>& a, const never_itterator& b) { return true; };
+//
+//template <typename T1>
+//bool operator== (const never_itterator& b, const group_itt_base<T1>& a) { return false; };
+//template <typename T1>
+//bool operator!= (const never_itterator& b, const group_itt_base<T1>& a) { return true; };
 
 
 template <typename T1, typename T2>
@@ -245,52 +244,6 @@ auto make_fun2itterator(NEXT_FUN_T&& fun, VALID_FUNT_T&& valid_fun) {
 
 
 
-template <typename data_T, typename NEXT_FUN_T>
-class fun_optional_itterator {
-public:
-
-	std::remove_reference_t<NEXT_FUN_T> m_fun;
-	
-	data_T m_buffer;
-
-	fun_optional_itterator(NEXT_FUN_T&& fun) :m_fun(std::forward< NEXT_FUN_T >(fun)) {
-		m_buffer = m_fun();
-	}
-	auto operator*() const {
-		return  *m_buffer;
-	}
-
-
-
-	fun_optional_itterator& operator++() { m_buffer = m_fun(); return *this; }
-	fun_optional_itterator operator++(int) { fun2_itterator tmp = *this; ++(*this); return tmp; }
-
-	template <typename T>
-	bool operator!= (T&& t) {
-		return  bool(m_buffer);
-	}
-
-};
-
-template <typename  NEXT_FUN_T>
-auto make_fun_optional_itterator(NEXT_FUN_T&& fun) {
-	fun_optional_itterator<decltype(fun()), NEXT_FUN_T> ret(
-		std::forward<NEXT_FUN_T>(fun)
-		
-	);
-
-	return ret;
-}
-
-
-template <typename  NEXT_FUN_T>
-auto make_range_optional(NEXT_FUN_T&& fun) {
-	return __range__(
-		make_fun_optional_itterator(std::forward< NEXT_FUN_T>(fun)),
-		never_itterator()
-	);
-}
-
 
 struct Compare_true {
 	template<typename T1, typename T2>
@@ -459,7 +412,7 @@ int main(int argc, char** argv) {
 	auto it = make_fun_optional_itterator([i = 10]() mutable->std::optional<int>  {
 		return i++;
 	});
-	
+
 	std::cout << *it << std::endl;
 	std::cout << *it << std::endl;
 	++it;
@@ -474,7 +427,7 @@ int main(int argc, char** argv) {
 	std::cout << bool(opf(1)) << std::endl;
 	std::cout << bool(opf(11)) << std::endl;
 	auto itt1 = make_fun2itterator([i = int(0)]()mutable  { return ++i; }, [] { return true; });
-	auto num1 =  __range__(
+	auto num1 = __range__(
 		itt1,
 		never_itterator()
 	);

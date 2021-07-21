@@ -26,7 +26,25 @@
 #include <span>
 
 namespace group_helper {
-
+	namespace group_colors {
+		enum color_t {
+			White = 0,
+			Black = 1,
+			Gray = 920,
+			Red = 632,
+			Green = 416,
+			Blue = 600,
+			Yellow = 400,
+			Magenta = 616,
+			Cyan = 432,
+			Orange = 800,
+			Spring = 820,
+			Teal = 840,
+			Azure = 860,
+			Violet = 880,
+			Pink = 900
+		};
+	}
 	template <typename XAxis_t, typename YAsis_t, typename VEC_t>
 	std::shared_ptr<TGraph> to_TGraph(const VEC_t& vec) {
 		auto ret = std::make_shared<TGraph>();
@@ -42,6 +60,30 @@ namespace group_helper {
 		auto ret = to_TGraph< XAxis_t, YAsis_t>(vec);
 
 		ret->Draw(options);
+		return  ret;
+	}
+
+
+	template <typename XAxis_t, typename YAsis_t>
+	std::shared_ptr<TGraph> plot(const XAxis_t& x, const YAsis_t& y, 
+								 const char* options = "AC", 
+								 group_colors::color_t mcolor = group_colors::Black) {
+
+		auto ret = std::make_shared<TGraph>();
+		auto x_itt = x.begin();
+		auto y_itt = y.begin();
+		while( x_itt != x.end() && y_itt != y.end()) {
+			ret->SetPoint(ret->GetN(), *x_itt, *y_itt);
+			++x_itt;
+			++y_itt;
+		}
+		if (ret->GetN() == 0){
+			return ret;
+		}
+		ret->Draw(options);
+		ret->SetFillColor(mcolor);
+		ret->SetLineColor(mcolor);
+		ret->SetMarkerColor(mcolor);
 		return  ret;
 	}
 

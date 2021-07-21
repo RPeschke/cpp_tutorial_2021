@@ -5,6 +5,9 @@
 #include <numeric>
 #include <vector>
 #include <tuple>
+#include <iostream>
+#include "group_concepts.hh"
+
 
 #define yiel_return123 g_set_continue(); return
 
@@ -56,6 +59,14 @@ namespace group_helper {
 
   };
 
+  namespace __group_imple__ {
+      template <typename T>
+      struct Convert_type_to_helper_vec
+      {
+
+      };
+  }
+
 
 #define  AXIS_NAME(name_, type_) \
   struct name_; \
@@ -65,9 +76,16 @@ namespace group_helper {
     name_(const std::tuple <T1...> & val) :name_( std::get<name_>(val)) {}  \
     name_() = default; \
     template <typename T1> \
-    auto operator()(const T1& val){ \
-      m_value = std::get<name_>(val); \
-      return *this; \
+    auto operator()(const T1& val) const{ \
+      return std::get<name_>(val); \
+    } \
+    template <typename T1> \
+    auto operator()(const std::vector<T1>& val) const{ \
+      return select_from_range(val, ::name_());\
+    } \
+    template <typename... T1> \
+    auto operator()(const group_vector<T1...>& val) const{ \
+      return select_from_range(val, ::name_());\
     } \
     template <typename T1>\
     auto operator==(const  T1& rhs ) const -> decltype( std::get<name_>(rhs) == m_value ){\
@@ -75,13 +93,186 @@ namespace group_helper {
     }\
   }; \
   inline std::string __get__name__(const name_&){ return #name_ ;}\
-inline std::string __get__name__and_type(const name_&){ return std::string(#name_ ) +"/"+ root_type_name(type_{});}
+inline std::string __get__name__and_type(const name_&){ return std::string(#name_ ) +"/"+ root_type_name(type_{});}\
+namespace group_helper{\
+namespace __group_imple__ {\
+  template <typename T>\
+  struct __##name_ {\
+	  auto name_() const & {\
+		  const T* th = static_cast<const T*>(this);\
+		  return select_from_range_sp(th->m_vec, \
+            [](const auto & e) -> type_ {\
+                return std::get<::name_>(e);\
+            });\
+	  }\
+  };\
+  template <>\
+  struct Convert_type_to_helper_vec< name_> {\
+	  template <typename T2>\
+	  using myType = __##name_<T2>;\
+  };\
+  }}
+  
+
+
+  namespace __group_imple__ {
+	  template <typename base_t, typename... T>
+	  struct group_vector_details : group_helper::__group_imple__::Convert_type_to_helper_vec<T>::template  myType<base_t> ...
+	  {
+
+	  };
+  }
+
+  template <size_t N, typename... T>
+  void  tuple_print(std::ostream& out, const std::tuple<T...>& tup) {
+	  if constexpr (N < std::tuple_size<std::tuple<T...>>::value) {
+		  out << __get__name__(std::get<N>(tup)) << ": " << std::get<N>(tup) << "| ";
+		  tuple_print<N + 1>(out, tup);
+	  }
+
+
+  }
+  template <typename... T>
+  std::ostream& operator<<(std::ostream& out, const std::tuple<T...>& tup) {
+	  out << "| ";
+	  tuple_print<0>(out, tup);
+
+	  return out;
+  }
+
+  template <typename... T>
+  class group_vector : public __group_imple__::group_vector_details< group_vector<T...>, T...> {
 
 
 
+  public:
+      using element_t = std::tuple<T...>;
+      using vec_t = std::vector<element_t>;
+      using vec_t_sp = std::shared_ptr<std::vector<std::tuple<T...>>>;
 
-  template <typename T, typename... FUNC_T>
-  auto fill_vector(const std::vector<T>& inputVec, FUNC_T&& ... func)
+      group_vector() {
+          m_vec = std::make_shared< std::vector<std::tuple<T...>> >();
+      };
+
+      group_vector(vec_t_sp value) : m_vec(value) {}
+
+
+      vec_t_sp m_vec;
+
+	  auto begin() const {
+		  return m_vec->begin();
+	  }
+	  auto end()const {
+		  return m_vec->end();
+	  }
+
+
+	  auto operator[](size_t i) const {
+		  return (*m_vec)[i];
+	  }
+	  
+	  
+
+	  template <range_container_t ROI_T>
+      group_vector operator[](const ROI_T& ROI) const  {
+          std::shared_ptr<std::vector<std::tuple< T...>>> ret = std::make_shared< 
+                                                                                    std::vector<std::tuple<T...>>
+                                                                                    >();
+		  auto vec_itt = m_vec.begin();
+		  auto ROI_itt = ROI.begin();
+		  while (vec_itt != m_vec.end() && ROI_itt != ROI.end()) {
+			  if (*ROI_itt) {
+                  element_t e{};
+				  ret->push_back(e);
+			  }
+			  ++vec_itt;
+			  ++ROI_itt;
+		  }
+
+		  return ret;
+	  }
+
+	  template <range_container_t ROI_T>
+      group_vector operator[](ROI_T&& ROI) const  {
+          //vec_t_sp ret;
+          std::shared_ptr<std::vector<std::tuple<T...> >> ret = std::make_shared<std::vector<std::tuple<T...>>>();
+		  auto vec_itt = m_vec->begin();
+		  auto ROI_itt = ROI.begin();
+		  while (vec_itt != m_vec->end() && ROI_itt != ROI.end()) {
+             
+			  if (*ROI_itt) {
+                
+                  std::tuple<T...> e=* vec_itt;
+				 ret->push_back(*vec_itt);
+			  }
+              
+			  ++vec_itt;
+              
+              ++ROI_itt;
+		  }
+
+		  return group_vector(ret);
+	  }
+	  auto size() const {
+		  return m_vec->size();
+	  }
+
+      
+	  template <typename T>
+	  void push_back(T&& t) {
+		  m_vec->push_back(std::forward<T>(t));
+      }
+
+	  template <typename... T>
+	  void emplace_back(T&&... t) {
+		  m_vec->emplace_back(std::forward<T>(t)...);
+	  }
+
+  };
+
+  template <typename... T1>
+  std::ostream& operator<<(std::ostream& out, const  group_vector<T1...>& range_) {
+	  for (const auto& e : range_) {
+		  out << e << "\n";
+	  }
+	  return out;
+  }
+
+  template <range_container_t T, typename... FUNC_T>
+  auto fill_group_vector(const T& inputVec, FUNC_T&& ... func)
+  {
+
+      std::shared_ptr<std::vector<std::tuple< decltype(func(inputVec[0]))...  >>> hits = std::make_shared<std::vector<std::tuple<  decltype(func(inputVec[0]))...   >>>();
+	  for (const auto & e : inputVec) {
+		  hits->emplace_back(func(e)...);
+	  }
+	  return group_vector< decltype(func(inputVec[0]))...  >(hits);
+  }
+
+  template <typename... FUNC_T>
+  auto fill_group_vector(size_t s, FUNC_T&& ... func)
+  {
+	  std::shared_ptr<std::vector<std::tuple<  decltype(func((int)0))...  >>> hits = std::make_shared<std::vector<std::tuple<  decltype(func((int)0))...  >>>();
+	  for (int i = 0; i < s; ++i) {
+		  hits->emplace_back(func(i)...);
+	  }
+	  return group_vector<decltype(func((int)0))... >(hits);
+  }
+
+  template <typename FUNC_T>
+  auto fill_group_vector2(size_t s, FUNC_T&& func)
+  {
+	  std::vector< decltype(func((int)0)) > hits;
+	  for (int i = 0; i < s; ++i) {
+		  hits.emplace_back(func(i));
+	  }
+	  return hits;
+  }
+
+
+  //////////////////////////////
+  template <range_container_t T, typename... FUNC_T>
+  auto fill_vector(const T& inputVec, FUNC_T&& ... func)
   {
     std::vector<std::tuple<  decltype(func(inputVec[0]))...  >> hits;
     for (int i = 0; i < inputVec.size(); ++i) {
@@ -145,6 +336,19 @@ inline std::string __get__name__and_type(const name_&){ return std::string(#name
 
   };
 
+  template <typename... T>
+  group_vector<T...>  make_group_vector(const std::vector<std::tuple<T...>>& container) {
+      std::shared_ptr< std::vector<std::tuple<T...>>> ret = std::make_shared<std::vector<std::tuple<T...>>>(container);
+      return   group_vector<T...>( ret );
+  }
+  template <typename... T>
+  group_vector<T...>  make_group_vector( std::shared_ptr<std::vector<std::tuple<T...>>>& container) {
+	  return   group_vector<T...>(container);
+  }
+
+  template <typename... T>
+  group_vector<T...>  make_group_vector(std::tuple<T...> container);
+
 
   template <typename T1, typename T2>
   auto __range__(T1&& b, T2&& e)
@@ -152,7 +356,148 @@ inline std::string __get__name__and_type(const name_&){ return std::string(#name
     return __range__impl< _Remove_cvref_t<T1>, _Remove_cvref_t<T2> >(std::forward<T1>(b), std::forward<T2>(e));
   }
 
+  ///////////////////////
 
+
+  template <typename T1, typename T2, typename T3>
+  class __range__impl_with_container {
+
+  public:
+
+      __range__impl_with_container(T1&& b, T2&& e, T3&& t3) : m_begin(b), m_end(e), m_container(t3) {}
+      __range__impl_with_container(const T1& b, const T2& e, T3 t3) : m_begin(b), m_end(e), m_container(t3){}
+	  auto begin() const
+	  {
+		  return m_begin;
+	  }
+	  auto back() const
+	  {
+		  return *(m_end - 1);
+	  }
+	  auto front() const
+	  {
+		  return *(m_begin);
+	  }
+	  auto end() const
+	  {
+		  return m_end;
+	  }
+	  auto operator[](size_t i) const
+	  {
+		  return *(m_begin + i);
+	  }
+	  size_t size() const
+	  {
+		  return  m_end - m_begin;
+	  }
+	  T1 m_begin;
+	  T2 m_end;
+
+      T3 m_container;
+  };
+
+  template <typename T1, typename T2, typename T3>
+  std::ostream& operator<<(std::ostream& out, const  __range__impl_with_container<T1, T2, T3>& range_) {
+      for (const auto&e : range_){
+          out << e << "\n";
+      }
+      return out;
+  }
+
+
+  template <typename T1, typename T2, typename T3>
+  auto __range__(T1&& b, T2&& e, T3 container)
+  {
+	  return __range__impl_with_container< _Remove_cvref_t<T1>, _Remove_cvref_t<T2>, _Remove_cvref_t<T3> >(std::forward<T1>(b), std::forward<T2>(e), container);
+  }
+  template <typename T, typename Projector_T>
+  struct select_itterator {
+
+	  T m_itterator;
+	  Projector_T m_pro;
+	  select_itterator(T itt, Projector_T pro) :m_itterator(itt), m_pro(pro) {}
+
+
+
+	  auto operator*() const {
+		  return  m_pro(*m_itterator);
+	  }
+
+
+
+	  select_itterator& operator++() { ++m_itterator; return *this; }
+	  select_itterator operator++(int) { select_itterator tmp = *this; ++(*this); return tmp; }
+
+	  template <typename T>
+	  bool operator!= (T&& t) {
+		  return  bool(m_itterator != t);
+	  }
+
+  };
+
+  template <typename RANGE_T, typename PROJECTOR_T>
+  auto select_from_range(const RANGE_T& r, PROJECTOR_T&& p) {
+      return  __range__(select_itterator(r.begin(), std::forward<PROJECTOR_T>(p)), r.end());
+  }
+
+  template <typename RANGE_T, typename PROJECTOR_T>
+  auto select_from_range_sp(const RANGE_T& r, PROJECTOR_T&& p) {
+	  return  __range__(
+          select_itterator<
+                            decltype(r->begin()), 
+                            PROJECTOR_T>( 
+                                    r->begin(), 
+                                    std::forward<PROJECTOR_T>(p)
+                                ), 
+                            r->end(),
+                       r);
+  }
+
+  template <typename RANGE_T, typename PROJECTOR_T>
+  auto select_from_range_with_container(const RANGE_T& r, PROJECTOR_T&& p) {
+	  return  __range__(
+		  select_itterator<
+		  decltype(r.begin()),
+		  PROJECTOR_T>(
+			  r.begin(),
+			  std::forward<PROJECTOR_T>(p)
+			  ),
+		  r.end(),
+		  r);
+  }
+  template <typename T1 , typename T2 ,typename T2a,  typename T3>
+  auto operator==(const __range__impl_with_container<T1,T2,T2a>& r, const T3& item) {
+      return select_from_range_with_container(r, [item](const auto& e) {
+          return e == item; 
+      });
+  }
+  template <typename T1, typename T2, typename T2a, typename T3>
+  auto operator>=(const __range__impl_with_container<T1, T2, T2a >& r, const T3& item) {
+	  return select_from_range_with_container(r, [item](const auto& e) {
+		  return e >= item;
+	  });
+  }
+
+  template <typename T1, typename T2, typename T2a, typename T3>
+  auto operator>(const __range__impl_with_container<T1, T2, T2a>& r, const T3& item) {
+	  return select_from_range_with_container(r, [item](const auto& e) {
+		  return e > item;
+	  });
+  }
+
+  template <typename T1, typename T2, typename T2a, typename T3>
+  auto operator<(const __range__impl_with_container<T1, T2, T2a >& r, const T3& item) {
+	  return select_from_range_with_container(r, [item](const auto& e) {
+		  return e < item;
+	  });
+  }
+
+  template <typename T1, typename T2, typename T2a, typename T3>
+  auto operator<=(const __range__impl_with_container<T1, T2, T2a>& r, const T3& item) {
+	  return select_from_range_with_container(r, [item](const auto& e) {
+		  return e < item;
+	  });
+  }
   template <typename... T>
   struct group {
     template <typename VEC_T, typename T1, typename... T_rest>
@@ -182,18 +527,18 @@ inline std::string __get__name__and_type(const name_&){ return std::string(#name
 
 
 
-    template <typename VEC_T, typename... FUNC_T>
-    static auto apply(const std::vector<VEC_T>& vec, FUNC_T&& ... fun)
+    template <range_container_t VEC_T, typename... FUNC_T>
+    static auto apply(const VEC_T& vec, FUNC_T&& ... fun)
     {
 
-      std::vector< std::tuple<T..., decltype(fun(__range__(std::begin(vec), std::end(vec))))...  >> ret;
+      std::vector< std::tuple<T..., decltype(fun(__range__(vec.begin(), vec.end())))...  >> ret;
       if (vec.empty()) {
         return ret;
       }
       auto tail = std::begin(vec);
 
       for (auto head = std::begin(vec); head != std::end(vec); ++head) {
-        if (!group<T...>::__isEequal<VEC_T, T...>(*head, *tail)) {
+        if (!group<T...>::__isEequal< std::remove_cvref_t <decltype(*vec.begin())>, T...>(*head, *tail)) {
           do {
 			  g_reset();
 			  ret.emplace_back(std::get<T>(*tail)..., fun(__range__(tail, head))...);
@@ -208,17 +553,16 @@ inline std::string __get__name__and_type(const name_&){ return std::string(#name
       return ret;
     }
 
-	template <typename VEC_T, typename FUNC_T>
-	static auto apply1(const std::vector<VEC_T>& vec, FUNC_T&&  fun)
+	template <range_container_t VEC_T, typename FUNC_T>
+	static auto apply1(const VEC_T& vec, FUNC_T&&  fun)
 	{
-    //    auto xasda = std::tuple_cat(std::tuple<T...>(), fun(__range__(std::begin(vec), std::end(vec)))[0]);
-
-		std::vector<  decltype(std::tuple_cat(std::tuple<T...>(), fun(__range__(std::begin(vec), std::end(vec)))[0]))  > ret;
+  
+		 std::vector<  decltype(std::tuple_cat(std::tuple<T...>(), fun(__range__(vec.begin(), vec.end()))[0] ))  > ret;
 	
-		auto tail = std::begin(vec);
+		auto tail = vec.begin();
 
-		for (auto head = std::begin(vec); head != std::end(vec); ++head) {
-			if (!group<T...>::__isEequal<VEC_T, T...>(*head, *tail)) {
+		for (auto head = vec.begin(); head != vec.end(); ++head) {
+			if (!group<T...>::__isEequal< std::remove_cvref_t <decltype(*vec.begin())>, T...>(*head, *tail)) {
                 auto dummy = fun(__range__(tail, head));
                 for (const auto& d: dummy) {
                     ret.push_back( std::tuple_cat( std::make_tuple(  std::get<T>(*tail)...) , d) );
@@ -233,36 +577,40 @@ inline std::string __get__name__and_type(const name_&){ return std::string(#name
 			ret.push_back(std::tuple_cat(std::make_tuple(std::get<T>(*tail)...), d));
 		}
 
-		//ret.emplace_back(std::get<T>(*tail)..., fun(__range__(tail, std::end(vec)))...);
+
         return ret;
 	}
 
-	template <typename VEC_T, typename FUNC_T>
-	static auto apply2(const std::vector<VEC_T>& vec, FUNC_T&& fun)
+	template <range_container_t VEC_T, typename FUNC_T>
+	static auto apply2(const VEC_T& vec, FUNC_T&& fun)
 	{
-		//    auto xasda = std::tuple_cat(std::tuple<T...>(), fun(__range__(std::begin(vec), std::end(vec)))[0]);
+	
+		decltype(make_group_vector(
+                                std::tuple_cat(
+                                        std::tuple<T...>(), fun(__range__(vec.begin(), vec.end() ))
+                                    )
+                                )
+                                )  
+                     ret;
 
-		std::vector<  decltype(std::tuple_cat(std::tuple<T...>(), fun(__range__(std::begin(vec), std::end(vec)))))  > ret;
+		auto tail = vec.begin();
 
-		auto tail = std::begin(vec);
-
-		for (auto head = std::begin(vec); head != std::end(vec); ++head) {
-			if (!group<T...>::__isEequal<VEC_T, T...>(*head, *tail)) {
+		for (auto head = vec.begin(); head != vec.end(); ++head) {
+			if (!group<T...>::__isEequal< std::remove_cvref_t <decltype(*vec.begin()) >, T...>(*head, *tail)) {
 				auto dummy = fun(__range__(tail, head));
-				
+
 				ret.push_back(std::tuple_cat(std::make_tuple(std::get<T>(*tail)...), dummy));
-				
+
 				tail = head;
 			}
 		}
 
 
 		auto dummy = fun(__range__(tail, std::end(vec)));
-		
+
 		ret.push_back(std::tuple_cat(std::make_tuple(std::get<T>(*tail)...), dummy));
 		
 
-		//ret.emplace_back(std::get<T>(*tail)..., fun(__range__(tail, std::end(vec)))...);
 		return ret;
 	}
 

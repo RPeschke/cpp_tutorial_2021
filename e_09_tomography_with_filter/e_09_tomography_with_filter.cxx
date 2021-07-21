@@ -194,7 +194,7 @@ img_vect_rec_t reconstruct(const sinogram_t& df_sinograph, int grid) {
 
 }
 
-sinogram_t apply_filter(const sinogram_t& df_sinogram, std::vector<double> FilterCore) {
+auto apply_filter(const sinogram_t& df_sinogram, std::vector<double> FilterCore) {
 
 
 	auto df_filtered = group_helper::group<angle>::apply1(df_sinogram,
@@ -312,7 +312,7 @@ int main(int argc, char** argv) {
 	save(oFileName, df_filtered, "df_sinogram_filtered", "update");
 	
 	auto fourier_filtered = fourier_2d<Color_d>(df_reconstructed_filtered);
-	save(oFileName, fourier_filtered, "fourier_filtered", "update");
+ 	save(oFileName, fourier_filtered, "fourier_filtered", "update");
 	auto fourier_original = fourier_2d<Color>(df_img);
 	save(oFileName, fourier_original, "fourier_original", "update");
 	auto fourier_reco = fourier_2d<Color_d>(df_reconstructed);
