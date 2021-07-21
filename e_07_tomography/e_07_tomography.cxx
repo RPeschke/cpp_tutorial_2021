@@ -58,7 +58,7 @@ int main(int argc, char** argv)
 		auto df_projection = fill_vector(df_img,
 			[&](const auto& e) -> angle { return angle_; },
 			[&](const auto& e) -> x_axis { return (height(e) - height0) * TMath::Cos(angle_1) - (Width(e) - weight0) * TMath::Sin(angle_1); },
-			[&](const auto& e) -> projection { return Color(e).m_value; }
+			[&](const auto& e) -> projection { return projection( Color(e)); }
 		);
 		std::sort(df_projection.begin(), df_projection.end());
 		auto df_summed_projection = group<angle, x_axis>::apply(df_projection,
