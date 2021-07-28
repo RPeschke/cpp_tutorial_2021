@@ -13,6 +13,7 @@ else()
     message( "Evirement Variable  'vcpkg_cmake_toolchain' Not found. Please provide the envirment variable poini ")
 endif()
 
+include_directories("extern")
 include_directories("extern/TGSignals")
 include_directories("extern/group_helpers")
 
@@ -44,6 +45,7 @@ add_subdirectory(e_17_implot)
 
 add_subdirectory(e_18_doppler_effect_imgui)
 
+add_subdirectory(e_19a_decay_lib)
 add_subdirectory(e_19_Muon_decay)
 
 
