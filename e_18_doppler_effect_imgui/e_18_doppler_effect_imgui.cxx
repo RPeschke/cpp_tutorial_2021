@@ -412,7 +412,8 @@ int main(int argc, char const* argv[])
 
 		ImGui::Begin("ImDesmos", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
 		
-
+		ImPlot::SetNextPlotLimitsX(-50, 30);
+		ImPlot::SetNextPlotLimitsY(-10, 60);
 		if (ImPlot::BeginPlot("##Plot", "time", "space", ImVec2(-1, -1), 0, ImPlotAxisFlags_NoInitialFit, ImPlotAxisFlags_NoInitialFit)) {
 			auto limits = ImPlot::GetPlotLimits();
 
