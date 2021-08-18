@@ -269,6 +269,23 @@ namespace __group_imple__ {\
 	  return hits;
   }
 
+  template <typename ... T> 
+  auto get_group_vector(const std::tuple<T...> ) {
+      return [&](const auto& vec) {
+          return group_vector<T...>(vec);
+      };
+  }
+
+   template <range_container_t T, typename FUNC_T>
+   auto fill_group_vector2(const T& inputVec, FUNC_T&& func)
+   {
+ 	  std::vector< decltype(func( *inputVec.begin() )) > hits;
+ 	  for (const auto& e : inputVec) {
+ 		  hits.emplace_back(func(e));
+ 	  }
+ 	//  return get_group_vector< decltype(func(*inputVec.begin()))   >(hits);
+      return hits;
+   }
 
   //////////////////////////////
   template <range_container_t T, typename... FUNC_T>
